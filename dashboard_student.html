@@ -87,6 +87,12 @@
 </head>
 <body>
 
+<!-- Page Header -->
+<div class="page-header">
+  <h1 class="header-title">CHS PROJECT VITAL SYSTEM</h1>
+  <p class="header-subtitle">VIRTUAL • INVENTORY • TRACKING • LOGGING</p>
+</div>
+
 <div class="navbar">
   <h1>📚 Student Dashboard</h1>
   <div class="navbar-right">
@@ -174,6 +180,12 @@
   <!-- TAB 1: Borrow Items -->
   <div id="borrow-tab" class="tab-content active">
     <h3>📦 Select Items to Borrow</h3>
+    
+    <div class="form-group">
+      <label for="searchItems">🔍 Search Items</label>
+      <input id="searchItems" type="text" placeholder="Search by item name or code..." oninput="filterItems()">
+    </div>
+    
     <div id="itemsList" class="items-list"></div>
 
     <div class="form-group">
@@ -252,8 +264,19 @@ document.addEventListener("click", function(event) {
 // Profile Functions
 function openProfile(){
   closeMenu();
+  const profileModal = document.getElementById("profileModal");
   const userID = localStorage.getItem("userID");
   
+  if(!profileModal) {
+    console.error("Profile modal not found in DOM");
+    showNotification("Error: Profile modal not found", "error");
+    return;
+  }
+  
+  // Show modal first
+  profileModal.style.display = "flex";
+  
+  // Then fetch data
   fetch(API, {
     method:"POST",
     body:new URLSearchParams({
@@ -269,14 +292,19 @@ function openProfile(){
       document.getElementById("profileContact").value = data.contact || "";
       document.getElementById("profileDepartment").value = data.department || "";
       document.getElementById("profileYear").value = data.year || "";
-      document.getElementById("profileModal").classList.add("active");
+    } else {
+      console.error("Profile error:", data);
+      showNotification("Could not load profile data", "info");
     }
   })
-  .catch(error => console.error("Error loading profile:", error));
+  .catch(error => {
+    console.error("Error loading profile:", error);
+    showNotification("Error loading profile", "error");
+  });
 }
 
 function closeProfile(){
-  document.getElementById("profileModal").classList.remove("active");
+  document.getElementById("profileModal").style.display = "none";
 }
 
 function saveProfile(){
@@ -311,11 +339,11 @@ function saveProfile(){
 // Password Change Functions
 function changePassword(){
   closeMenu();
-  document.getElementById("passwordModal").classList.add("active");
+  document.getElementById("passwordModal").style.display = "flex";
 }
 
 function closePassword(){
-  document.getElementById("passwordModal").classList.remove("active");
+  document.getElementById("passwordModal").style.display = "none";
   document.getElementById("currentPassword").value = "";
   document.getElementById("newPassword").value = "";
   document.getElementById("confirmPassword").value = "";
@@ -416,7 +444,15 @@ function switchTab(tabName) {
   document.getElementById(tabName).classList.add('active');
   event.target.classList.add('active');
   
-  // Load data when switching to borrowed tab
+  // Load data when switching to different tabs
+  if(tabName === 'borrow-tab') {
+    // Clear search when switching to borrow tab
+    const searchInput = document.getElementById("searchItems");
+    if(searchInput) {
+      searchInput.value = "";
+      filterItems();
+    }
+  }
   if(tabName === 'borrowed-tab') {
     loadBorrowedItems();
   }
@@ -466,6 +502,27 @@ function selectItem(el){
     selectedItems.push({id: el.value, name: el.dataset.name});
   }else{
     selectedItems = selectedItems.filter(i=>i.id!==el.value);
+  }
+}
+
+function filterItems(){
+  const searchText = document.getElementById("searchItems").value.toLowerCase();
+  const itemLabels = document.querySelectorAll(".item-label");
+  let visibleCount = 0;
+  
+  itemLabels.forEach(label => {
+    const itemName = label.textContent.toLowerCase();
+    if(itemName.includes(searchText)){
+      label.style.display = "flex";
+      visibleCount++;
+    } else {
+      label.style.display = "none";
+    }
+  });
+  
+  // Show message if no items match
+  if(visibleCount === 0 && searchText.length > 0){
+    // You could add a "no results" message here if needed
   }
 }
 

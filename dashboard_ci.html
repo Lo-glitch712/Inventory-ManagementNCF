@@ -92,6 +92,12 @@
 </head>
 <body>
 
+<!-- Page Header -->
+<div class="page-header">
+  <h1 class="header-title">CHS PROJECT VITAL SYSTEM</h1>
+  <p class="header-subtitle">VIRTUAL • INVENTORY • TRACKING • LOGGING</p>
+</div>
+
 <div class="navbar">
   <h1>⚙️ Clinical Instructor Dashboard</h1>
   <div class="navbar-right">
@@ -268,8 +274,19 @@ document.addEventListener("click", function(event) {
 // Profile Functions
 function openProfile(){
   closeMenu();
+  const profileModal = document.getElementById("profileModal");
   const userID = localStorage.getItem("userID");
   
+  if(!profileModal) {
+    console.error("Profile modal not found in DOM");
+    showNotification("Error: Profile modal not found", "error");
+    return;
+  }
+  
+  // Show modal first
+  profileModal.style.display = "flex";
+  
+  // Then fetch data
   fetch(API, {
     method:"POST",
     body:new URLSearchParams({
@@ -284,14 +301,19 @@ function openProfile(){
       document.getElementById("profileEmail").value = data.email || "";
       document.getElementById("profileContact").value = data.contact || "";
       document.getElementById("profileDepartment").value = data.department || "";
-      document.getElementById("profileModal").classList.add("active");
+    } else {
+      console.error("Profile error:", data);
+      showNotification("Could not load profile data", "info");
     }
   })
-  .catch(error => console.error("Error loading profile:", error));
+  .catch(error => {
+    console.error("Error loading profile:", error);
+    showNotification("Error loading profile", "error");
+  });
 }
 
 function closeProfile(){
-  document.getElementById("profileModal").classList.remove("active");
+  document.getElementById("profileModal").style.display = "none";
 }
 
 function saveProfile(){
@@ -325,11 +347,11 @@ function saveProfile(){
 // Password Change Functions
 function changePassword(){
   closeMenu();
-  document.getElementById("passwordModal").classList.add("active");
+  document.getElementById("passwordModal").style.display = "flex";
 }
 
 function closePassword(){
-  document.getElementById("passwordModal").classList.remove("active");
+  document.getElementById("passwordModal").style.display = "none";
   document.getElementById("currentPassword").value = "";
   document.getElementById("newPassword").value = "";
   document.getElementById("confirmPassword").value = "";

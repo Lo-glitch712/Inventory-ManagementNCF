@@ -11,6 +11,67 @@ body{
   padding: 20px;
 }
 
+/* Header Styling */
+.page-header {
+  background: linear-gradient(135deg, #155e63 0%, #0d3838 100%);
+  padding: 30px 20px;
+  border-radius: 12px;
+  margin-bottom: 30px;
+  text-align: center;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+  border: 3px solid #d4af37;
+}
+
+.header-title {
+  font-size: 48px;
+  font-weight: 900;
+  color: #d4af37;
+  margin: 0;
+  letter-spacing: 2px;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+  line-height: 1.2;
+}
+
+.header-subtitle {
+  font-size: 18px;
+  color: #e8f5e9;
+  margin: 12px 0 0 0;
+  letter-spacing: 4px;
+  font-weight: 600;
+}
+
+@media (max-width: 768px) {
+  .page-header {
+    padding: 20px 15px;
+    margin-bottom: 20px;
+  }
+  
+  .header-title {
+    font-size: 32px;
+  }
+  
+  .header-subtitle {
+    font-size: 14px;
+    letter-spacing: 2px;
+  }
+}
+
+@media (max-width: 480px) {
+  .page-header {
+    padding: 15px 10px;
+    margin-bottom: 15px;
+  }
+  
+  .header-title {
+    font-size: 24px;
+  }
+  
+  .header-subtitle {
+    font-size: 12px;
+    letter-spacing: 1px;
+  }
+}
+
 .navbar {
   background: white;
   padding: 15px 20px;
@@ -72,7 +133,7 @@ body{
   top: 0;
   width: 300px;
   height: 100vh;
-  background: white;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
   box-shadow: 2px 0 10px rgba(0,0,0,0.1);
   z-index: 999;
   transition: left 0.3s ease;
@@ -93,7 +154,7 @@ body{
   border: none;
   font-size: 20px;
   cursor: pointer;
-  color: #666;
+  color: white;
 }
 
 .side-menu .menu-content {
@@ -105,18 +166,19 @@ body{
 
 .side-menu .menu-btn {
   padding: 12px;
-  background: #f0f0f0;
-  border: none;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.3);
   border-radius: 6px;
   cursor: pointer;
   text-align: left;
-  font-weight: 500;
+  font-weight: 600;
   transition: all 0.2s ease;
   width: 100%;
+  color: white;
 }
 
 .side-menu .menu-btn:hover {
-  background: #e8e8e8;
+  background: rgba(255, 255, 255, 0.25);
   transform: translateX(5px);
 }
 
@@ -176,6 +238,8 @@ body{
 
 .modal-body {
   padding: 30px 20px;
+  background: white;
+  color: #333;
 }
 
 @keyframes fadeIn {
