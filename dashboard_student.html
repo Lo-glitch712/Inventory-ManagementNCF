@@ -5,6 +5,85 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Student Dashboard - Inventory Management</title>
   <link rel="stylesheet" href="style.css">
+  <style>
+    .tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      border-bottom: 2px solid #e0e0e0;
+    }
+    .tab-btn {
+      padding: 12px 20px;
+      background: transparent;
+      border: none;
+      border-bottom: 3px solid transparent;
+      cursor: pointer;
+      font-weight: 600;
+      color: #666;
+      transition: all 0.3s ease;
+    }
+    .tab-btn.active {
+      color: #667eea;
+      border-bottom-color: #667eea;
+    }
+    .tab-content {
+      display: none;
+    }
+    .tab-content.active {
+      display: block;
+    }
+    .borrowed-item {
+      background: #f8f9fa;
+      padding: 15px;
+      margin: 10px 0;
+      border-radius: 8px;
+      border-left: 4px solid #667eea;
+    }
+    .borrowed-item-header {
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 8px;
+    }
+    .borrowed-item-info {
+      font-size: 14px;
+      color: #666;
+      line-height: 1.6;
+    }
+    .status-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-top: 8px;
+    }
+    .status-borrowed {
+      background: #fff3cd;
+      color: #856404;
+    }
+    .status-pending {
+      background: #d1ecf1;
+      color: #0c5460;
+    }
+    .qr-display {
+      background: white;
+      padding: 15px;
+      margin: 10px 0;
+      border-radius: 8px;
+      text-align: center;
+      border: 1px solid #e0e0e0;
+    }
+    .qr-display small {
+      display: block;
+      color: #999;
+      margin-top: 10px;
+    }
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: #999;
+    }
+  </style>
 </head>
 <body>
 
@@ -17,20 +96,41 @@
 </div>
 
 <div class="container">
-  <h3>📦 Select Items to Borrow</h3>
-  <div id="itemsList" class="items-list"></div>
-
-  <div class="form-group">
-    <label for="returnDate">Expected Return Date & Time</label>
-    <input type="datetime-local" id="returnDate" required>
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('borrow-tab')">📦 Borrow Items</button>
+    <button class="tab-btn" onclick="switchTab('borrowed-tab')">🔄 My Borrowed Items</button>
+    <button class="tab-btn" onclick="switchTab('history-tab')">📋 History</button>
   </div>
-  
-  <button onclick="generateQR()">Generate QR Code</button>
 
-  <div class="qr-container" id="qrContainer" style="display:none;">
-    <h4>Your QR Code</h4>
-    <canvas id="qrcode"></canvas>
-    <p style="color: #666; margin-top: 10px;">Scan this QR code at the counter to complete your borrow request</p>
+  <!-- TAB 1: Borrow Items -->
+  <div id="borrow-tab" class="tab-content active">
+    <h3>📦 Select Items to Borrow</h3>
+    <div id="itemsList" class="items-list"></div>
+
+    <div class="form-group">
+      <label for="returnDate">Expected Return Date & Time</label>
+      <input type="datetime-local" id="returnDate" required>
+    </div>
+    
+    <button onclick="generateQR()">Generate QR Code</button>
+
+    <div class="qr-container" id="qrContainer" style="display:none;">
+      <h4>Your QR Code</h4>
+      <canvas id="qrcode"></canvas>
+      <p style="color: #666; margin-top: 10px;">📱 Take this QR code to the counter and let the instructor scan it to confirm your borrow</p>
+    </div>
+  </div>
+
+  <!-- TAB 2: My Borrowed Items -->
+  <div id="borrowed-tab" class="tab-content">
+    <h3>🔄 Currently Borrowed Items</h3>
+    <div id="borrowedItemsList"></div>
+  </div>
+
+  <!-- TAB 3: History -->
+  <div id="history-tab" class="tab-content">
+    <h3>📋 Borrow History</h3>
+    <div id="historyList"></div>
   </div>
 </div>
 
@@ -45,6 +145,24 @@ function checkAuth() {
     window.location = "login.html";
   } else {
     document.getElementById("userName").textContent = localStorage.getItem("userName") || "User";
+  }
+}
+
+function switchTab(tabName) {
+  // Hide all tabs
+  document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+  
+  // Show selected tab
+  document.getElementById(tabName).classList.add('active');
+  event.target.classList.add('active');
+  
+  // Load data when switching to borrowed tab
+  if(tabName === 'borrowed-tab') {
+    loadBorrowedItems();
+  }
+  if(tabName === 'history-tab') {
+    loadBorrowHistory();
   }
 }
 
@@ -91,7 +209,6 @@ function selectItem(el){
 }
 
 function generateQR(){
-  // Validation
   if (selectedItems.length === 0) {
     showNotification("Please select at least one item", "error");
     return;
@@ -123,6 +240,91 @@ function generateQR(){
   document.getElementById("qrContainer").style.display = "block";
   
   showNotification("✓ QR Code generated! Take it to the counter to scan and process your borrow.", "success");
+}
+
+function loadBorrowedItems(){
+  fetch(API,{
+    method:"POST",
+    body:new URLSearchParams({
+      action:"getBorrowedItems",
+      student:localStorage.getItem("userID")
+    })
+  })
+  .then(res=>res.json())
+  .then(data=>{
+    let container = document.getElementById("borrowedItemsList");
+    container.innerHTML = "";
+
+    if (!data || data.length === 0) {
+      container.innerHTML = "<div class='empty-state'>📭 You don't have any borrowed items</div>";
+      return;
+    }
+
+    data.forEach(record => {
+      if(record[5] === "Borrowed") { // Only show borrowed items
+        const returnDate = new Date(record[4]);
+        const now = new Date();
+        const isOverdue = returnDate < now;
+
+        container.innerHTML += `
+          <div class="borrowed-item">
+            <div class="borrowed-item-header">${record[2]}</div>
+            <div class="borrowed-item-info">
+              <p><strong>Expected Return:</strong> ${returnDate.toLocaleString()}</p>
+              <p><strong>Status:</strong> <span class="status-badge status-borrowed">Borrowed</span></p>
+              ${isOverdue ? '<p style="color: #dc3545;"><strong>⚠️ OVERDUE</strong></p>' : ''}
+            </div>
+          </div>
+        `;
+      }
+    });
+  })
+  .catch(error => {
+    console.error("Error loading borrowed items:", error);
+    showNotification("Failed to load borrowed items", "error");
+  });
+}
+
+function loadBorrowHistory(){
+  fetch(API,{
+    method:"POST",
+    body:new URLSearchParams({
+      action:"getBorrowHistory",
+      student:localStorage.getItem("userID")
+    })
+  })
+  .then(res=>res.json())
+  .then(data=>{
+    let container = document.getElementById("historyList");
+    container.innerHTML = "";
+
+    if (!data || data.length === 0) {
+      container.innerHTML = "<div class='empty-state'>📭 No history yet</div>";
+      return;
+    }
+
+    data.forEach(record => {
+      const status = record[5];
+      const statusBadge = status === "Returned" ? 
+        '<span class="status-badge" style="background: #d4edda; color: #155724;">✓ Returned</span>' : 
+        '<span class="status-badge status-borrowed">Borrowed</span>';
+
+      container.innerHTML += `
+        <div class="borrowed-item">
+          <div class="borrowed-item-header">${record[2]}</div>
+          <div class="borrowed-item-info">
+            <p><strong>Borrowed:</strong> ${new Date(record[3]).toLocaleString()}</p>
+            <p><strong>Return Date:</strong> ${new Date(record[4]).toLocaleString()}</p>
+            <p><strong>Status:</strong> ${statusBadge}</p>
+          </div>
+        </div>
+      `;
+    });
+  })
+  .catch(error => {
+    console.error("Error loading history:", error);
+    showNotification("Failed to load history", "error");
+  });
 }
 
 checkAuth();
