@@ -250,18 +250,23 @@ function loadBorrowedItems(){
       student:localStorage.getItem("userID")
     })
   })
-  .then(res=>res.json())
+  .then(res=>{
+    if(!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+    return res.json();
+  })
   .then(data=>{
     let container = document.getElementById("borrowedItemsList");
     container.innerHTML = "";
 
-    if (!data || data.length === 0) {
+    if (!data || data.length === 0 || data.error) {
       container.innerHTML = "<div class='empty-state'>📭 You don't have any borrowed items</div>";
       return;
     }
 
+    let foundBorrowed = false;
     data.forEach(record => {
       if(record[5] === "Borrowed") { // Only show borrowed items
+        foundBorrowed = true;
         const returnDate = new Date(record[4]);
         const now = new Date();
         const isOverdue = returnDate < now;
@@ -278,9 +283,14 @@ function loadBorrowedItems(){
         `;
       }
     });
+
+    if(!foundBorrowed) {
+      container.innerHTML = "<div class='empty-state'>📭 You don't have any borrowed items</div>";
+    }
   })
   .catch(error => {
     console.error("Error loading borrowed items:", error);
+    document.getElementById("borrowedItemsList").innerHTML = "<div class='empty-state' style='color: #dc3545;'>❌ Error loading borrowed items</div>";
     showNotification("Failed to load borrowed items", "error");
   });
 }
@@ -293,12 +303,15 @@ function loadBorrowHistory(){
       student:localStorage.getItem("userID")
     })
   })
-  .then(res=>res.json())
+  .then(res=>{
+    if(!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+    return res.json();
+  })
   .then(data=>{
     let container = document.getElementById("historyList");
     container.innerHTML = "";
 
-    if (!data || data.length === 0) {
+    if (!data || data.length === 0 || data.error) {
       container.innerHTML = "<div class='empty-state'>📭 No history yet</div>";
       return;
     }
@@ -320,9 +333,14 @@ function loadBorrowHistory(){
         </div>
       `;
     });
+
+    if(container.innerHTML === "") {
+      container.innerHTML = "<div class='empty-state'>📭 No history yet</div>";
+    }
   })
   .catch(error => {
     console.error("Error loading history:", error);
+    document.getElementById("historyList").innerHTML = "<div class='empty-state' style='color: #dc3545;'>❌ Error loading history</div>";
     showNotification("Failed to load history", "error");
   });
 }
