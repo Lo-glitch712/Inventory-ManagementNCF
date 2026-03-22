@@ -54,6 +54,139 @@ body{
   transform: translateY(-2px);
 }
 
+/* Hamburger Menu */
+.menu-toggle {
+  background: transparent !important;
+  color: #333 !important;
+  font-size: 24px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: none !important;
+  cursor: pointer;
+  width: auto !important;
+}
+
+.side-menu {
+  position: fixed;
+  left: -300px;
+  top: 0;
+  width: 300px;
+  height: 100vh;
+  background: white;
+  box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+  z-index: 999;
+  transition: left 0.3s ease;
+  padding-top: 20px;
+  display: none;
+}
+
+.side-menu.active {
+  left: 0;
+  display: block;
+}
+
+.side-menu .close-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: transparent;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: #666;
+}
+
+.side-menu .menu-content {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.side-menu .menu-btn {
+  padding: 12px;
+  background: #f0f0f0;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  text-align: left;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.side-menu .menu-btn:hover {
+  background: #e8e8e8;
+  transform: translateX(5px);
+}
+
+/* Modal Styles */
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.5);
+  animation: fadeIn 0.3s ease;
+}
+
+.modal.active {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+  max-width: 500px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 1px solid #e0e0e0;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  border-radius: 12px 12px 0 0;
+}
+
+.modal-header h3 {
+  color: white;
+  margin: 0;
+  font-size: 20px;
+}
+
+.modal-header .close-btn {
+  background: transparent;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: white;
+}
+
+.modal-body {
+  padding: 30px 20px;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 h1, h2, h3 {
   color: white;
   margin-bottom: 20px;
@@ -527,5 +660,14 @@ a:hover {
   .notification {
     font-size: 12px;
     padding: 10px 12px;
+  }
+  
+  .side-menu {
+    width: 80%;
+    left: -80%;
+  }
+  
+  .modal-content {
+    max-width: 90%;
   }
 }
