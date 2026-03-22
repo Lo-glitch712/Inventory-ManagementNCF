@@ -98,7 +98,7 @@ function processBorrow(data) {
   document.getElementById("result").innerHTML = `
     <div style="background: #e7f3ff; padding: 15px; border-radius: 8px; text-align: left;">
       <h4>📤 Borrow Confirmation</h4>
-      <p><strong>Student ID:</strong> ${data.student}</p>
+      <p><strong>Student Name:</strong> ${data.studentName}</p>
       <p><strong>Items:</strong> ${data.itemNames || data.items}</p>
       <p><strong>Return Date:</strong> ${new Date(data.returnDate).toLocaleString()}</p>
     </div>
@@ -149,7 +149,7 @@ function processReturn(data) {
   document.getElementById("result").innerHTML = `
     <div style="background: #fff3cd; padding: 15px; border-radius: 8px; text-align: left;">
       <h4>📥 Return Confirmation</h4>
-      <p><strong>Student ID:</strong> ${data.student}</p>
+      <p><strong>Student Name:</strong> ${data.studentName}</p>
       <p><strong>Items:</strong> ${data.itemNames || data.items}</p>
     </div>
   `;
