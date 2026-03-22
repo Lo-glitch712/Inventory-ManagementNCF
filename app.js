@@ -1,4 +1,4 @@
-const API = "PASTE_YOUR_WEB_APP_URL";
+const API = "https://script.google.com/macros/s/AKfycbxwUSZX6XCJytfqECWqsXxBxVDzA-iJ7HtaXtKby8Ma9YfPdtrZ3q3UiOLlTY00oukf/exec";
 
 
 // Helper function for showing notifications
