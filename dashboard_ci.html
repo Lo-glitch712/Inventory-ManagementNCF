@@ -409,10 +409,11 @@ function loadBorrowedItemsTracking(){
 
     data.forEach(record => {
       const student = record[1];
-      const items = record[2];
-      const borrowDate = new Date(record[3]);
-      const returnDate = new Date(record[4]);
-      const status = record[5];
+      const studentName = record[2];
+      const items = record[3];
+      const borrowDate = new Date(record[4]);
+      const returnDate = new Date(record[5]);
+      const status = record[6];
       const now = new Date();
       const isOverdue = returnDate < now && status === "Borrowed";
 
@@ -425,6 +426,7 @@ function loadBorrowedItemsTracking(){
             <div class="borrow-header">${items}${isOverdue ? ' ⚠️ OVERDUE' : ''}</div>
             <div class="borrow-info">
               <p><strong>Student ID:</strong> ${student}</p>
+              <p><strong>Student Name:</strong> ${studentName}</p>
               <p><strong>Borrowed:</strong> ${borrowDate.toLocaleString()}</p>
               <p><strong>Return Date:</strong> ${returnDate.toLocaleString()}</p>
               <span class="status-badge status-borrowed">Borrowed</span>
@@ -437,6 +439,7 @@ function loadBorrowedItemsTracking(){
             <div class="borrow-header">${items}</div>
             <div class="borrow-info">
               <p><strong>Student ID:</strong> ${student}</p>
+              <p><strong>Student Name:</strong> ${studentName}</p>
               <p><strong>Returned:</strong> ${borrowDate.toLocaleString()}</p>
               <span class="status-badge status-returned">✓ Returned</span>
             </div>
