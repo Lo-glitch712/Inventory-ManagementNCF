@@ -23,8 +23,15 @@
 
 <div class="scanner-container">
   <div class="container">
-    <h3>Scan Item Return QR Code</h3>
-    <p style="color: #666; margin-bottom: 20px;">Position the QR code in the camera to automatically process the return</p>
+    <h3>📱 QR Code Scanner</h3>
+    <div style="background: #e7f3ff; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+      <strong>📖 How it works:</strong>
+      <ul style="margin: 10px 0; padding-left: 20px;">
+        <li><strong>First Scan (Borrow):</strong> Student shows QR code - system reduces stock</li>
+        <li><strong>Second Scan (Return):</strong> Student returns with same QR - system restores stock</li>
+      </ul>
+    </div>
+    <p style="color: #666; margin-bottom: 20px;">Position the QR code in the camera to process borrow or return</p>
     <div id="reader" style="width: 100%; max-width: 500px; margin: 0 auto;"></div>
     <div id="result" style="margin-top: 20px; text-align: center;"></div>
   </div>
@@ -37,62 +44,16 @@ let scanner = null;
 let isProcessing = false;
 
 function onScanSuccess(decodedText) {
-  if (isProcessing) return; // Prevent multiple submissions
+  if (isProcessing) return;
   
   isProcessing = true;
   
   try {
     let data = JSON.parse(decodedText);
     
-    document.getElementById("result").innerHTML = `
-      <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; text-align: left;">
-        <h4>Return Details</h4>
-        <p><strong>Student ID:</strong> ${data.student}</p>
-        <p><strong>Student Name:</strong> ${data.studentName || 'N/A'}</p>
-        <p><strong>Items:</strong> ${data.itemNames || data.items}</p>
-        <p><strong>Borrow Date:</strong> ${new Date(data.borrowDate).toLocaleString()}</p>
-        <p><strong>Return Date:</strong> ${new Date(data.returnDate).toLocaleString()}</p>
-      </div>
-    `;
-
-    fetch(API, {
-      method:"POST",
-      body:new URLSearchParams({
-        action:"returnItem",
-        student:data.student,
-        items:data.items
-      })
-    })
-    .then(res=>res.json())
-    .then(response=>{
-      if (response.status === "success") {
-        showNotification("Item returned successfully!", "success");
-        document.getElementById("result").innerHTML += `<div style="margin-top: 15px; padding: 15px; background: #d4edda; border-radius: 8px; color: #155724;"><strong>✓ Return processed successfully</strong></div>`;
-        
-        // Reset after 3 seconds
-        setTimeout(() => {
-          isProcessing = false;
-          document.getElementById("result").innerHTML = "";
-          if (scanner) {
-            scanner.resume();
-          }
-        }, 3000);
-      } else {
-        showNotification(response.message || "Return failed", "error");
-        isProcessing = false;
-        if (scanner) {
-          scanner.resume();
-        }
-      }
-    })
-    .catch(error => {
-      console.error("Error:", error);
-      showNotification("Error processing return: " + error.message, "error");
-      isProcessing = false;
-      if (scanner) {
-        scanner.resume();
-      }
-    });
+    // First, check if this is a return or a borrow
+    // by checking if items are already marked as "Borrowed"
+    checkBorrowStatus(data);
 
   } catch (e) {
     console.error("Invalid QR code format:", e);
@@ -102,6 +63,133 @@ function onScanSuccess(decodedText) {
       scanner.resume();
     }
   }
+}
+
+function checkBorrowStatus(qrData) {
+  fetch(API, {
+    method:"POST",
+    body:new URLSearchParams({
+      action:"checkBorrowStatus",
+      student:qrData.student,
+      items:qrData.items
+    })
+  })
+  .then(res=>res.json())
+  .then(response=>{
+    // If status is "Borrowed", this is a RETURN scan
+    // If status is "Not Found", this is a BORROW scan
+    if(response.status === "Borrowed") {
+      processReturn(qrData);
+    } else {
+      processBorrow(qrData);
+    }
+  })
+  .catch(error => {
+    console.error("Error checking status:", error);
+    showNotification("Error checking borrow status", "error");
+    isProcessing = false;
+    if (scanner) {
+      scanner.resume();
+    }
+  });
+}
+
+function processBorrow(data) {
+  document.getElementById("result").innerHTML = `
+    <div style="background: #e7f3ff; padding: 15px; border-radius: 8px; text-align: left;">
+      <h4>📤 Borrow Confirmation</h4>
+      <p><strong>Student ID:</strong> ${data.student}</p>
+      <p><strong>Items:</strong> ${data.itemNames || data.items}</p>
+      <p><strong>Return Date:</strong> ${new Date(data.returnDate).toLocaleString()}</p>
+    </div>
+  `;
+
+  fetch(API, {
+    method:"POST",
+    body:new URLSearchParams({
+      action:"borrow",
+      student:data.student,
+      items:data.items,
+      returnDate:data.returnDate
+    })
+  })
+  .then(res=>res.json())
+  .then(response=>{
+    if (response.status === "success") {
+      showNotification("✓ Borrow processed successfully!", "success");
+      document.getElementById("result").innerHTML += `<div style="margin-top: 15px; padding: 15px; background: #d4edda; border-radius: 8px; color: #155724;"><strong>✓ Stock has been updated</strong></div>`;
+      
+      setTimeout(() => {
+        isProcessing = false;
+        document.getElementById("result").innerHTML = "";
+        if (scanner) {
+          scanner.resume();
+        }
+      }, 3000);
+    } else {
+      showNotification(response.message || "Borrow failed", "error");
+      isProcessing = false;
+      if (scanner) {
+        scanner.resume();
+      }
+    }
+  })
+  .catch(error => {
+    console.error("Error:", error);
+    showNotification("Error processing borrow: " + error.message, "error");
+    isProcessing = false;
+    if (scanner) {
+      scanner.resume();
+    }
+  });
+}
+
+function processReturn(data) {
+  document.getElementById("result").innerHTML = `
+    <div style="background: #fff3cd; padding: 15px; border-radius: 8px; text-align: left;">
+      <h4>📥 Return Confirmation</h4>
+      <p><strong>Student ID:</strong> ${data.student}</p>
+      <p><strong>Items:</strong> ${data.itemNames || data.items}</p>
+    </div>
+  `;
+
+  fetch(API, {
+    method:"POST",
+    body:new URLSearchParams({
+      action:"returnItem",
+      student:data.student,
+      items:data.items
+    })
+  })
+  .then(res=>res.json())
+  .then(response=>{
+    if (response.status === "success") {
+      showNotification("✓ Return processed successfully!", "success");
+      document.getElementById("result").innerHTML += `<div style="margin-top: 15px; padding: 15px; background: #d4edda; border-radius: 8px; color: #155724;"><strong>✓ Stock has been restored</strong></div>`;
+      
+      setTimeout(() => {
+        isProcessing = false;
+        document.getElementById("result").innerHTML = "";
+        if (scanner) {
+          scanner.resume();
+        }
+      }, 3000);
+    } else {
+      showNotification(response.message || "Return failed", "error");
+      isProcessing = false;
+      if (scanner) {
+        scanner.resume();
+      }
+    }
+  })
+  .catch(error => {
+    console.error("Error:", error);
+    showNotification("Error processing return: " + error.message, "error");
+    isProcessing = false;
+    if (scanner) {
+      scanner.resume();
+    }
+  });
 }
 
 function onScanError(error) {
