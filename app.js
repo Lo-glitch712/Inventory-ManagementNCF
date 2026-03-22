@@ -1,4 +1,5 @@
-const API = "https://script.google.com/macros/s/AKfycbxwUSZX6XCJytfqECWqsXxBxVDzA-iJ7HtaXtKby8Ma9YfPdtrZ3q3UiOLlTY00oukf/exec";
+const API = "PASTE_YOUR_WEB_APP_URL";
+
 
 // Helper function for showing notifications
 function showNotification(message, type = 'info') {
@@ -34,14 +35,60 @@ function register(){
   const button = event.target;
   button.setAttribute('data-original-text', button.textContent);
   
+  // Get all form fields
+  const role = document.getElementById('role').value.trim();
+  const name = document.getElementById('name').value.trim();
+  const department = document.getElementById('department').value.trim();
+  const year = document.getElementById('year').value.trim();
+  const contact = document.getElementById('contact').value.trim();
+  const email = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value.trim();
+  
   // Validation
-  if (!name.value || !email.value || !password.value || !department.value || !year.value || !contact.value) {
-    showNotification('Please fill all fields', 'error');
+  if (!role || role === '') {
+    showNotification('Please select a role', 'error');
     return;
   }
   
-  if (password.value.length < 6) {
+  if (!name || name === '') {
+    showNotification('Please enter your full name', 'error');
+    return;
+  }
+  
+  if (!department || department === '') {
+    showNotification('Please enter your department', 'error');
+    return;
+  }
+  
+  if (!year || year === '') {
+    showNotification('Please enter your year level', 'error');
+    return;
+  }
+  
+  if (!contact || contact === '') {
+    showNotification('Please enter your contact number', 'error');
+    return;
+  }
+  
+  if (!email || email === '') {
+    showNotification('Please enter your email', 'error');
+    return;
+  }
+  
+  if (!password || password === '') {
+    showNotification('Please enter your password', 'error');
+    return;
+  }
+  
+  if (password.length < 6) {
     showNotification('Password must be at least 6 characters', 'error');
+    return;
+  }
+  
+  // Email validation
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    showNotification('Please enter a valid email address', 'error');
     return;
   }
   
@@ -51,13 +98,13 @@ function register(){
     method:"POST",
     body:new URLSearchParams({
       action:"register",
-      role:role.value,
-      name:name.value,
-      department:department.value,
-      year:year.value,
-      contact:contact.value,
-      email:email.value,
-      password:password.value
+      role:role,
+      name:name,
+      department:department,
+      year:year,
+      contact:contact,
+      email:email,
+      password:password
     })
   })
   .then(res => res.json())
@@ -80,9 +127,18 @@ function login(){
   const button = event.target;
   button.setAttribute('data-original-text', button.textContent);
   
+  // Get form fields
+  const email = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value.trim();
+  
   // Validation
-  if (!email.value || !password.value) {
-    showNotification('Please fill all fields', 'error');
+  if (!email || email === '') {
+    showNotification('Please enter your email', 'error');
+    return;
+  }
+  
+  if (!password || password === '') {
+    showNotification('Please enter your password', 'error');
     return;
   }
   
@@ -92,8 +148,8 @@ function login(){
     method:"POST",
     body:new URLSearchParams({
       action:"login",
-      email:email.value,
-      password:password.value
+      email:email,
+      password:password
     })
   })
   .then(res=>res.json())
@@ -119,10 +175,10 @@ function login(){
   });
 }
 
-localStorage.setItem("userID", data.id);
-
 function logout() {
   localStorage.clear();
   showNotification('Logged out successfully', 'success');
   setTimeout(() => window.location = 'login.html', 1000);
 }
+
+localStorage.setItem("userID", data.id);
