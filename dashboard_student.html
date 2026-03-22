@@ -91,7 +91,76 @@
   <h1>📚 Student Dashboard</h1>
   <div class="navbar-right">
     <span>Welcome, <strong id="userName"></strong></span>
-    <button onclick="logout()">Logout</button>
+    <button class="menu-toggle" onclick="toggleMenu()">☰</button>
+  </div>
+</div>
+
+<!-- Hamburger Menu -->
+<div id="sideMenu" class="side-menu">
+  <button class="close-btn" onclick="toggleMenu()">✕</button>
+  <div class="menu-content">
+    <button onclick="openProfile()" class="menu-btn">👤 My Profile</button>
+    <button onclick="changePassword()" class="menu-btn">🔐 Change Password</button>
+    <hr style="margin: 10px 0; border: none; border-top: 1px solid #e0e0e0;">
+    <button onclick="logout()" class="menu-btn" style="color: #dc3545;">🚪 Logout</button>
+  </div>
+</div>
+
+<!-- Profile Modal -->
+<div id="profileModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>👤 My Profile</h3>
+      <button class="close-btn" onclick="closeProfile()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Name</label>
+        <input type="text" id="profileName" readonly>
+      </div>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="profileEmail">
+      </div>
+      <div class="form-group">
+        <label>Contact</label>
+        <input type="tel" id="profileContact">
+      </div>
+      <div class="form-group">
+        <label>Department</label>
+        <input type="text" id="profileDepartment">
+      </div>
+      <div class="form-group">
+        <label>Year Level</label>
+        <input type="number" id="profileYear">
+      </div>
+      <button onclick="saveProfile()" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">💾 Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- Password Change Modal -->
+<div id="passwordModal" class="modal">
+  <div class="modal-content" style="max-width: 400px;">
+    <div class="modal-header">
+      <h3>🔐 Change Password</h3>
+      <button class="close-btn" onclick="closePassword()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Current Password</label>
+        <input type="password" id="currentPassword" placeholder="Enter current password">
+      </div>
+      <div class="form-group">
+        <label>New Password</label>
+        <input type="password" id="newPassword" placeholder="Enter new password (min 6 chars)" minlength="6">
+      </div>
+      <div class="form-group">
+        <label>Confirm Password</label>
+        <input type="password" id="confirmPassword" placeholder="Confirm new password" minlength="6">
+      </div>
+      <button onclick="updatePassword()" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">✓ Update Password</button>
+    </div>
   </div>
 </div>
 
@@ -138,6 +207,138 @@
 <script src="app.js"></script>
 <script>
 let selectedItems = [];
+
+// Hamburger Menu Functions
+function toggleMenu(){
+  const menu = document.getElementById("sideMenu");
+  menu.classList.toggle("active");
+}
+
+function closeMenu(){
+  const menu = document.getElementById("sideMenu");
+  menu.classList.remove("active");
+}
+
+// Close menu when clicking outside
+document.addEventListener("click", function(event) {
+  const menu = document.getElementById("sideMenu");
+  const menuToggle = document.querySelector(".menu-toggle");
+  if(!menu.contains(event.target) && event.target !== menuToggle) {
+    menu.classList.remove("active");
+  }
+});
+
+// Profile Functions
+function openProfile(){
+  closeMenu();
+  const userID = localStorage.getItem("userID");
+  
+  fetch(API, {
+    method:"POST",
+    body:new URLSearchParams({
+      action:"getUserProfile",
+      userID:userID
+    })
+  })
+  .then(res=>res.json())
+  .then(data=>{
+    if(data.status === "success"){
+      document.getElementById("profileName").value = data.name || "";
+      document.getElementById("profileEmail").value = data.email || "";
+      document.getElementById("profileContact").value = data.contact || "";
+      document.getElementById("profileDepartment").value = data.department || "";
+      document.getElementById("profileYear").value = data.year || "";
+      document.getElementById("profileModal").classList.add("active");
+    }
+  })
+  .catch(error => console.error("Error loading profile:", error));
+}
+
+function closeProfile(){
+  document.getElementById("profileModal").classList.remove("active");
+}
+
+function saveProfile(){
+  const userID = localStorage.getItem("userID");
+  
+  fetch(API, {
+    method:"POST",
+    body:new URLSearchParams({
+      action:"updateUserProfile",
+      userID:userID,
+      email:document.getElementById("profileEmail").value,
+      contact:document.getElementById("profileContact").value,
+      department:document.getElementById("profileDepartment").value,
+      year:document.getElementById("profileYear").value
+    })
+  })
+  .then(res=>res.json())
+  .then(data=>{
+    if(data.status === "success"){
+      showNotification("✓ Profile updated successfully!", "success");
+      closeProfile();
+    } else {
+      showNotification("Error updating profile", "error");
+    }
+  })
+  .catch(error => {
+    console.error("Error:", error);
+    showNotification("Failed to update profile", "error");
+  });
+}
+
+// Password Change Functions
+function changePassword(){
+  closeMenu();
+  document.getElementById("passwordModal").classList.add("active");
+}
+
+function closePassword(){
+  document.getElementById("passwordModal").classList.remove("active");
+  document.getElementById("currentPassword").value = "";
+  document.getElementById("newPassword").value = "";
+  document.getElementById("confirmPassword").value = "";
+}
+
+function updatePassword(){
+  const newPassword = document.getElementById("newPassword").value;
+  const confirmPassword = document.getElementById("confirmPassword").value;
+  
+  if(newPassword !== confirmPassword){
+    showNotification("Passwords do not match", "error");
+    return;
+  }
+  
+  if(newPassword.length < 6){
+    showNotification("Password must be at least 6 characters", "error");
+    return;
+  }
+  
+  const userID = localStorage.getItem("userID");
+  
+  fetch(API, {
+    method:"POST",
+    body:new URLSearchParams({
+      action:"changePassword",
+      userID:userID,
+      currentPassword:document.getElementById("currentPassword").value,
+      newPassword:newPassword
+    })
+  })
+  .then(res=>res.json())
+  .then(data=>{
+    if(data.status === "success"){
+      showNotification("✓ Password changed successfully!", "success");
+      closePassword();
+    } else {
+      showNotification(data.message || "Failed to change password", "error");
+    }
+  })
+  .catch(error => {
+    console.error("Error:", error);
+    showNotification("Error changing password", "error");
+  });
+}
 
 // Check authentication
 function checkAuth() {
@@ -267,15 +468,20 @@ function loadBorrowedItems(){
 
     let foundBorrowed = false;
     data.forEach(record => {
-      if(record[6] === "Borrowed") { // Only show borrowed items (status at index 6)
+      // Handle both old format (6 cols) and new format (7 cols)
+      const status = record.length >= 7 ? record[6] : record[5];
+      const items = record.length >= 7 ? record[3] : record[2];
+      const returnDateVal = record.length >= 7 ? record[5] : record[4];
+      
+      if(status === "Borrowed") {
         foundBorrowed = true;
-        const returnDate = new Date(record[5]); // Return date at index 5
+        const returnDate = new Date(returnDateVal);
         const now = new Date();
         const isOverdue = returnDate < now;
 
         container.innerHTML += `
           <div class="borrowed-item">
-            <div class="borrowed-item-header">${record[3]}</div>
+            <div class="borrowed-item-header">${items}</div>
             <div class="borrowed-item-info">
               <p><strong>Expected Return:</strong> ${returnDate.toLocaleString()}</p>
               <p><strong>Status:</strong> <span class="status-badge status-borrowed">Borrowed</span></p>
@@ -319,17 +525,22 @@ function loadBorrowHistory(){
     }
 
     data.forEach(record => {
-      const status = record[6]; // Status at index 6
+      // Handle both old format (6 cols) and new format (7 cols)
+      const status = record.length >= 7 ? record[6] : record[5];
+      const items = record.length >= 7 ? record[3] : record[2];
+      const borrowDateVal = record.length >= 7 ? record[4] : record[3];
+      const returnDateVal = record.length >= 7 ? record[5] : record[4];
+      
       const statusBadge = status === "Returned" ? 
         '<span class="status-badge" style="background: #d4edda; color: #155724;">✓ Returned</span>' : 
         '<span class="status-badge status-borrowed">Borrowed</span>';
 
       container.innerHTML += `
         <div class="borrowed-item">
-          <div class="borrowed-item-header">${record[3]}</div>
+          <div class="borrowed-item-header">${items}</div>
           <div class="borrowed-item-info">
-            <p><strong>Borrowed:</strong> ${new Date(record[4]).toLocaleString()}</p>
-            <p><strong>Return Date:</strong> ${new Date(record[5]).toLocaleString()}</p>
+            <p><strong>Borrowed:</strong> ${new Date(borrowDateVal).toLocaleString()}</p>
+            <p><strong>Return Date:</strong> ${new Date(returnDateVal).toLocaleString()}</p>
             <p><strong>Status:</strong> ${statusBadge}</p>
           </div>
         </div>
@@ -393,6 +604,7 @@ function requestNotificationPermission(){
 }
 
 checkAuth();
+loadItems();
 // Request notification permission
 requestNotificationPermission();
 // Check for overdue items on page load
