@@ -395,24 +395,33 @@ function closeReturnModal(){
 }
 
 function showReturnQR(itemName, qrData){
-  // Show modal
-  document.getElementById("returnModal").style.display = "block";
+  // Show modal - use flex to center properly
+  const modal = document.getElementById("returnModal");
+  modal.style.display = "flex";
   
   // Set item name
   document.getElementById("returnItemName").textContent = itemName;
   
-  // Generate QR code with return data
+  // Clear previous QR code
   const canvas = document.getElementById("returnQRcode");
-  canvas.innerHTML = ""; // QRCode.js creates img, so clear first
+  canvas.innerHTML = "";
   
-  new QRCode(canvas, {
-    text: qrData,
-    width: 250,
-    height: 250,
-    colorDark: "#000000",
-    colorLight: "#ffffff",
-    correctLevel: QRCode.CorrectLevel.H
-  });
+  // Delay QR generation slightly to ensure canvas is visible
+  setTimeout(() => {
+    try {
+      new QRCode(canvas, {
+        text: qrData,
+        width: 250,
+        height: 250,
+        colorDark: "#000000",
+        colorLight: "#ffffff",
+        correctLevel: QRCode.CorrectLevel.H
+      });
+    } catch(e) {
+      console.error("Error generating QR code:", e);
+      showNotification("Error generating QR code", "error");
+    }
+  }, 100);
 }
 
 // Check authentication
