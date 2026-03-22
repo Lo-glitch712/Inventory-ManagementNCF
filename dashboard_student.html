@@ -3,79 +3,351 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Register - Inventory Management System</title>
+  <title>Student Dashboard - Inventory Management</title>
   <link rel="stylesheet" href="style.css">
+  <style>
+    .tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      border-bottom: 2px solid #e0e0e0;
+    }
+    .tab-btn {
+      padding: 12px 20px;
+      background: transparent;
+      border: none;
+      border-bottom: 3px solid transparent;
+      cursor: pointer;
+      font-weight: 600;
+      color: #666;
+      transition: all 0.3s ease;
+    }
+    .tab-btn.active {
+      color: #667eea;
+      border-bottom-color: #667eea;
+    }
+    .tab-content {
+      display: none;
+    }
+    .tab-content.active {
+      display: block;
+    }
+    .borrowed-item {
+      background: #f8f9fa;
+      padding: 15px;
+      margin: 10px 0;
+      border-radius: 8px;
+      border-left: 4px solid #667eea;
+    }
+    .borrowed-item-header {
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 8px;
+    }
+    .borrowed-item-info {
+      font-size: 14px;
+      color: #666;
+      line-height: 1.6;
+    }
+    .status-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-top: 8px;
+    }
+    .status-borrowed {
+      background: #fff3cd;
+      color: #856404;
+    }
+    .status-pending {
+      background: #d1ecf1;
+      color: #0c5460;
+    }
+    .qr-display {
+      background: white;
+      padding: 15px;
+      margin: 10px 0;
+      border-radius: 8px;
+      text-align: center;
+      border: 1px solid #e0e0e0;
+    }
+    .qr-display small {
+      display: block;
+      color: #999;
+      margin-top: 10px;
+    }
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: #999;
+    }
+  </style>
 </head>
 <body>
 
-<div class="container">
-  <h2>📝 Register</h2>
-  
-  <div class="form-group">
-    <label for="role">Role</label>
-    <select id="role" onchange="updateYearLevelRequired()" required>
-      <option value="">-- Select Role --</option>
-      <option value="Student">Student</option>
-      <option value="Clinical Instructor">Clinical Instructor</option>
-    </select>
-  </div>
-
-  <div class="form-group">
-    <label for="name">Full Name</label>
-    <input id="name" type="text" placeholder="Enter your full name" required>
-  </div>
-
-  <div class="form-group">
-    <label for="department">Department</label>
-    <input id="department" type="text" placeholder="e.g., Nursing, Medicine" required>
-  </div>
-
-  <div class="form-group">
-    <label for="year">Year Level <span id="yearRequired" style="color: #dc3545;">*</span></label>
-    <input id="year" type="number" placeholder="e.g., 1, 2, 3, 4" min="1" max="6">
-  </div>
-
-  <div class="form-group">
-    <label for="contact">Contact Number</label>
-    <input id="contact" type="tel" placeholder="Enter your contact number" required>
-  </div>
-
-  <div class="form-group">
-    <label for="email">Email Address</label>
-    <input id="email" type="email" placeholder="Enter your email" required>
-  </div>
-
-  <div class="form-group">
-    <label for="password">Password</label>
-    <input id="password" type="password" placeholder="Minimum 6 characters" minlength="6" required>
-  </div>
-
-  <button onclick="register()">Register</button>
-  
-  <div class="auth-buttons" style="justify-content: center; gap: 10px;">
-    <span style="color: #666;">Already have an account?</span>
-    <a href="login.html" style="padding: 8px 16px; margin-top: 0;">Login here</a>
+<div class="navbar">
+  <h1>📚 Student Dashboard</h1>
+  <div class="navbar-right">
+    <span>Welcome, <strong id="userName"></strong></span>
+    <button onclick="logout()">Logout</button>
   </div>
 </div>
 
+<div class="container">
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('borrow-tab')">📦 Borrow Items</button>
+    <button class="tab-btn" onclick="switchTab('borrowed-tab')">🔄 My Borrowed Items</button>
+    <button class="tab-btn" onclick="switchTab('history-tab')">📋 History</button>
+  </div>
+
+  <!-- TAB 1: Borrow Items -->
+  <div id="borrow-tab" class="tab-content active">
+    <h3>📦 Select Items to Borrow</h3>
+    <div id="itemsList" class="items-list"></div>
+
+    <div class="form-group">
+      <label for="returnDate">Expected Return Date & Time</label>
+      <input type="datetime-local" id="returnDate" required>
+    </div>
+    
+    <button onclick="generateQR()">Generate QR Code</button>
+
+    <div class="qr-container" id="qrContainer" style="display:none;">
+      <h4>Your QR Code</h4>
+      <canvas id="qrcode"></canvas>
+      <p style="color: #666; margin-top: 10px;">📱 Take this QR code to the counter and let the instructor scan it to confirm your borrow</p>
+    </div>
+  </div>
+
+  <!-- TAB 2: My Borrowed Items -->
+  <div id="borrowed-tab" class="tab-content">
+    <h3>🔄 Currently Borrowed Items</h3>
+    <div id="borrowedItemsList"></div>
+  </div>
+
+  <!-- TAB 3: History -->
+  <div id="history-tab" class="tab-content">
+    <h3>📋 Borrow History</h3>
+    <div id="historyList"></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
 <script src="app.js"></script>
 <script>
-function updateYearLevelRequired() {
-  const role = document.getElementById("role").value;
-  const yearInput = document.getElementById("year");
-  const yearRequired = document.getElementById("yearRequired");
-  
-  if (role === "Student") {
-    yearInput.setAttribute("required", "");
-    yearRequired.style.display = "inline";
-  } else if (role === "Clinical Instructor") {
-    yearInput.removeAttribute("required");
-    yearRequired.style.display = "none";
+let selectedItems = [];
+
+// Check authentication
+function checkAuth() {
+  if (!localStorage.getItem("userID")) {
+    window.location = "login.html";
+  } else {
+    document.getElementById("userName").textContent = localStorage.getItem("userName") || "User";
   }
 }
 
-// Initialize on page load
-document.addEventListener("DOMContentLoaded", updateYearLevelRequired);
+function switchTab(tabName) {
+  // Hide all tabs
+  document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+  
+  // Show selected tab
+  document.getElementById(tabName).classList.add('active');
+  event.target.classList.add('active');
+  
+  // Load data when switching to borrowed tab
+  if(tabName === 'borrowed-tab') {
+    loadBorrowedItems();
+  }
+  if(tabName === 'history-tab') {
+    loadBorrowHistory();
+  }
+}
+
+function loadItems(){
+  fetch(API,{
+    method:"POST",
+    body:new URLSearchParams({action:"getItems"})
+  })
+  .then(res=>res.json())
+  .then(data=>{
+    let container = document.getElementById("itemsList");
+    container.innerHTML="";
+
+    if (!data || data.length === 0) {
+      container.innerHTML = "<p style='text-align:center; color:#999;'>No items available</p>";
+      return;
+    }
+
+    data.forEach(row=>{
+      const itemId = row[0];
+      const itemName = row[1];
+      const stock = row[4];
+      
+      container.innerHTML += `
+        <label class="item-label">
+          <input type="checkbox" class="item-checkbox" value="${itemId}" data-name="${itemName}" onchange="selectItem(this)">
+          <span>${itemName} (Stock: ${stock})</span>
+        </label>
+      `;
+    });
+  })
+  .catch(error => {
+    console.error("Error loading items:", error);
+    showNotification("Failed to load items", "error");
+  });
+}
+
+function selectItem(el){
+  if(el.checked){
+    selectedItems.push({id: el.value, name: el.dataset.name});
+  }else{
+    selectedItems = selectedItems.filter(i=>i.id!==el.value);
+  }
+}
+
+function generateQR(){
+  if (selectedItems.length === 0) {
+    showNotification("Please select at least one item", "error");
+    return;
+  }
+  
+  if (!document.getElementById("returnDate").value) {
+    showNotification("Please select a return date and time", "error");
+    return;
+  }
+  
+  const data = JSON.stringify({
+    student: localStorage.getItem("userID"),
+    studentName: localStorage.getItem("userName"),
+    items: selectedItems.map(i => i.id).join(","),
+    itemNames: selectedItems.map(i => i.name).join(", "),
+    returnDate: document.getElementById("returnDate").value,
+    borrowDate: new Date().toISOString()
+  });
+
+  QRCode.toCanvas(document.getElementById("qrcode"), data, {
+    width: 300,
+    margin: 10,
+    color: {
+      dark: '#000000',
+      light: '#FFFFFF'
+    }
+  });
+
+  document.getElementById("qrContainer").style.display = "block";
+  
+  showNotification("✓ QR Code generated! Take it to the counter to scan and process your borrow.", "success");
+}
+
+function loadBorrowedItems(){
+  fetch(API,{
+    method:"POST",
+    body:new URLSearchParams({
+      action:"getBorrowedItems",
+      student:localStorage.getItem("userID")
+    })
+  })
+  .then(res=>{
+    if(!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+    return res.json();
+  })
+  .then(data=>{
+    let container = document.getElementById("borrowedItemsList");
+    container.innerHTML = "";
+
+    if (!data || data.length === 0 || data.error) {
+      container.innerHTML = "<div class='empty-state'>📭 You don't have any borrowed items</div>";
+      return;
+    }
+
+    let foundBorrowed = false;
+    data.forEach(record => {
+      if(record[6] === "Borrowed") { // Only show borrowed items (status at index 6)
+        foundBorrowed = true;
+        const returnDate = new Date(record[5]); // Return date at index 5
+        const now = new Date();
+        const isOverdue = returnDate < now;
+
+        container.innerHTML += `
+          <div class="borrowed-item">
+            <div class="borrowed-item-header">${record[3]}</div>
+            <div class="borrowed-item-info">
+              <p><strong>Expected Return:</strong> ${returnDate.toLocaleString()}</p>
+              <p><strong>Status:</strong> <span class="status-badge status-borrowed">Borrowed</span></p>
+              ${isOverdue ? '<p style="color: #dc3545;"><strong>⚠️ OVERDUE</strong></p>' : ''}
+            </div>
+          </div>
+        `;
+      }
+    });
+
+    if(!foundBorrowed) {
+      container.innerHTML = "<div class='empty-state'>📭 You don't have any borrowed items</div>";
+    }
+  })
+  .catch(error => {
+    console.error("Error loading borrowed items:", error);
+    document.getElementById("borrowedItemsList").innerHTML = "<div class='empty-state' style='color: #dc3545;'>❌ Error loading borrowed items</div>";
+    showNotification("Failed to load borrowed items", "error");
+  });
+}
+
+function loadBorrowHistory(){
+  fetch(API,{
+    method:"POST",
+    body:new URLSearchParams({
+      action:"getBorrowHistory",
+      student:localStorage.getItem("userID")
+    })
+  })
+  .then(res=>{
+    if(!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+    return res.json();
+  })
+  .then(data=>{
+    let container = document.getElementById("historyList");
+    container.innerHTML = "";
+
+    if (!data || data.length === 0 || data.error) {
+      container.innerHTML = "<div class='empty-state'>📭 No history yet</div>";
+      return;
+    }
+
+    data.forEach(record => {
+      const status = record[6]; // Status at index 6
+      const statusBadge = status === "Returned" ? 
+        '<span class="status-badge" style="background: #d4edda; color: #155724;">✓ Returned</span>' : 
+        '<span class="status-badge status-borrowed">Borrowed</span>';
+
+      container.innerHTML += `
+        <div class="borrowed-item">
+          <div class="borrowed-item-header">${record[3]}</div>
+          <div class="borrowed-item-info">
+            <p><strong>Borrowed:</strong> ${new Date(record[4]).toLocaleString()}</p>
+            <p><strong>Return Date:</strong> ${new Date(record[5]).toLocaleString()}</p>
+            <p><strong>Status:</strong> ${statusBadge}</p>
+          </div>
+        </div>
+      `;
+    });
+
+    if(container.innerHTML === "") {
+      container.innerHTML = "<div class='empty-state'>📭 No history yet</div>";
+    }
+  })
+  .catch(error => {
+    console.error("Error loading history:", error);
+    document.getElementById("historyList").innerHTML = "<div class='empty-state' style='color: #dc3545;'>❌ Error loading history</div>";
+    showNotification("Failed to load history", "error");
+  });
+}
+
+checkAuth();
+loadItems();
 </script>
+
 </body>
 </html>
