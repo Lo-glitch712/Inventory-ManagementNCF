@@ -402,14 +402,21 @@ function showReturnQR(itemName, qrData){
   // Set item name
   document.getElementById("returnItemName").textContent = itemName;
   
-  // Clear previous QR code
-  const canvas = document.getElementById("returnQRcode");
-  canvas.innerHTML = "";
+  // Get canvas and clear it properly
+  const canvasContainer = document.getElementById("returnQRcode").parentElement;
+  const oldCanvas = document.getElementById("returnQRcode");
+  oldCanvas.remove();
   
-  // Delay QR generation slightly to ensure canvas is visible
+  // Create new canvas element
+  const newCanvas = document.createElement('canvas');
+  newCanvas.id = "returnQRcode";
+  canvasContainer.appendChild(newCanvas);
+  
+  // Delay QR generation slightly to ensure canvas is ready
   setTimeout(() => {
     try {
-      new QRCode(canvas, {
+      console.log("Generating return QR code with data:", qrData);
+      new QRCode(newCanvas, {
         text: qrData,
         width: 250,
         height: 250,
@@ -417,11 +424,12 @@ function showReturnQR(itemName, qrData){
         colorLight: "#ffffff",
         correctLevel: QRCode.CorrectLevel.H
       });
+      console.log("QR code generated successfully");
     } catch(e) {
       console.error("Error generating QR code:", e);
       showNotification("Error generating QR code", "error");
     }
-  }, 100);
+  }, 50);
 }
 
 // Check authentication
