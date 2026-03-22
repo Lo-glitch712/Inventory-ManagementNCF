@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Dashboard - Inventory Management</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="navbar">
+  <h1>📚 Student Dashboard</h1>
+  <div class="navbar-right">
+    <span>Welcome, <strong id="userName"></strong></span>
+    <button onclick="logout()">Logout</button>
+  </div>
+</div>
+
+<div class="container">
+  <h3>📦 Select Items to Borrow</h3>
+  <div id="itemsList" class="items-list"></div>
+
+  <div class="form-group">
+    <label for="returnDate">Expected Return Date & Time</label>
+    <input type="datetime-local" id="returnDate" required>
+  </div>
+  
+  <button onclick="generateQR()">Generate QR Code</button>
+
+  <div class="qr-container" id="qrContainer" style="display:none;">
+    <h4>Your QR Code</h4>
+    <canvas id="qrcode"></canvas>
+    <p style="color: #666; margin-top: 10px;">Scan this QR code at the counter to complete your borrow request</p>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+<script src="app.js"></script>
+<script>
+let selectedItems = [];
+
+// Check authentication
+function checkAuth() {
+  if (!localStorage.getItem("userID")) {
+    window.location = "login.html";
+  } else {
+    document.getElementById("userName").textContent = localStorage.getItem("userName") || "User";
+  }
+}
+
+function loadItems(){
+  fetch(API,{
+    method:"POST",
+    body:new URLSearchParams({action:"getItems"})
+  })
+  .then(res=>res.json())
+  .then(data=>{
+    let container = document.getElementById("itemsList");
+    container.innerHTML="";
+
+    if (!data || data.length === 0) {
+      container.innerHTML = "<p style='text-align:center; color:#999;'>No items available</p>";
+      return;
+    }
+
+    data.forEach(row=>{
+      const itemId = row[0];
+      const itemName = row[1];
+      const stock = row[4];
+      
+      container.innerHTML += `
+        <label class="item-label">
+          <input type="checkbox" class="item-checkbox" value="${itemId}" data-name="${itemName}" onchange="selectItem(this)">
+          <span>${itemName} (Stock: ${stock})</span>
+        </label>
+      `;
+    });
+  })
+  .catch(error => {
+    console.error("Error loading items:", error);
+    showNotification("Failed to load items", "error");
+  });
+}
+
+function selectItem(el){
+  if(el.checked){
+    selectedItems.push({id: el.value, name: el.dataset.name});
+  }else{
+    selectedItems = selectedItems.filter(i=>i.id!==el.value);
+  }
+}
+
+function generateQR(){
+  // Validation
+  if (selectedItems.length === 0) {
+    showNotification("Please select at least one item", "error");
+    return;
+  }
+  
+  if (!document.getElementById("returnDate").value) {
+    showNotification("Please select a return date and time", "error");
+    return;
+  }
+  
+  const data = JSON.stringify({
+    student: localStorage.getItem("userID"),
+    studentName: localStorage.getItem("userName"),
+    items: selectedItems.map(i => i.id).join(","),
+    itemNames: selectedItems.map(i => i.name).join(", "),
+    returnDate: document.getElementById("returnDate").value,
+    borrowDate: new Date().toISOString()
+  });
+
+  QRCode.toCanvas(document.getElementById("qrcode"), data, {
+    width: 300,
+    margin: 10,
+    color: {
+      dark: '#000000',
+      light: '#FFFFFF'
+    }
+  });
+
+  document.getElementById("qrContainer").style.display = "block";
+  
+  fetch(API,{
+    method:"POST",
+    body:new URLSearchParams({
+      action:"borrow",
+      student: localStorage.getItem("userID"),
+      studentName: localStorage.getItem("userName"),
+      items: selectedItems.map(i => i.id).join(","),
+      returnDate: document.getElementById("returnDate").value
+    })
+  })
+  .then(res=>res.json())
+  .then(data=>{
+    if (data.status === "success") {
+      showNotification("Borrow request submitted! Show QR code at counter.", "success");
+      // Reset form
+      setTimeout(() => {
+        selectedItems = [];
+        document.querySelectorAll(".item-checkbox").forEach(cb => cb.checked = false);
+        document.getElementById("returnDate").value = "";
+        document.getElementById("qrContainer").style.display = "none";
+      }, 2000);
+    }
+  })
+  .catch(error => {
+    console.error("Error:", error);
+    showNotification("Error submitting borrow request", "error");
+  });
+}
+
+checkAuth();
+loadItems();
+</script>
+
+</body>
+</html>
