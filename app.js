@@ -180,5 +180,3 @@ function logout() {
   showNotification('Logged out successfully', 'success');
   setTimeout(() => window.location = 'login.html', 1000);
 }
-
-localStorage.setItem("userID", data.id);
