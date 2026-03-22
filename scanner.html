@@ -109,6 +109,7 @@ function processBorrow(data) {
     body:new URLSearchParams({
       action:"borrow",
       student:data.student,
+      studentName:data.studentName,
       items:data.items,
       returnDate:data.returnDate
     })
@@ -158,6 +159,7 @@ function processReturn(data) {
     body:new URLSearchParams({
       action:"returnItem",
       student:data.student,
+      studentName:data.studentName,
       items:data.items
     })
   })
