@@ -208,7 +208,7 @@ function loadItems(){
     currentData = data;
     let table = document.getElementById("inventoryTable");
 
-    if (!data || data.length === 0) {
+    if (!data || data.length <= 1) {
       table.innerHTML = "<tr><td colspan='7' style='text-align:center; color:#999;'>No items in inventory</td></tr>";
       return;
     }
@@ -229,21 +229,23 @@ function loadItems(){
     `;
 
     const tbody = table.querySelector('tbody');
-    data.forEach((row, index)=>{
+    // Skip header row (index 0)
+    for(let i = 1; i < data.length; i++) {
+      const row = data[i];
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td contenteditable onblur="updateField(${index},1,this.innerText)" class="edit-cell">${row[1] || ''}</td>
-        <td contenteditable onblur="updateField(${index},2,this.innerText)" class="edit-cell">${row[2] || ''}</td>
-        <td contenteditable onblur="updateField(${index},3,this.innerText)" class="edit-cell">${row[3] || ''}</td>
-        <td contenteditable onblur="updateField(${index},4,this.innerText)" class="edit-cell">${row[4] || ''}</td>
-        <td contenteditable onblur="updateField(${index},5,this.innerText)" class="edit-cell">${row[5] || ''}</td>
-        <td contenteditable onblur="updateField(${index},6,this.innerText)" class="edit-cell">${row[6] || ''}</td>
+        <td contenteditable onblur="updateField(${i},1,this.innerText)" class="edit-cell">${row[1] || ''}</td>
+        <td contenteditable onblur="updateField(${i},2,this.innerText)" class="edit-cell">${row[2] || ''}</td>
+        <td contenteditable onblur="updateField(${i},3,this.innerText)" class="edit-cell">${row[3] || ''}</td>
+        <td contenteditable onblur="updateField(${i},4,this.innerText)" class="edit-cell">${row[4] || ''}</td>
+        <td contenteditable onblur="updateField(${i},5,this.innerText)" class="edit-cell">${row[5] || ''}</td>
+        <td contenteditable onblur="updateField(${i},6,this.innerText)" class="edit-cell">${row[6] || ''}</td>
         <td>
-          <button class="btn-danger" onclick="deleteItem(${index})" style="width: 100%; padding: 8px; margin: 0;">Delete</button>
+          <button class="btn-danger" onclick="deleteItem(${i})" style="width: 100%; padding: 8px; margin: 0;">Delete</button>
         </td>
       `;
       tbody.appendChild(tr);
-    });
+    }
   })
   .catch(error => {
     console.error("Error loading items:", error);

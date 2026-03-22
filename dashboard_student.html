@@ -176,12 +176,14 @@ function loadItems(){
     let container = document.getElementById("itemsList");
     container.innerHTML="";
 
-    if (!data || data.length === 0) {
+    if (!data || data.length <= 1) {
       container.innerHTML = "<p style='text-align:center; color:#999;'>No items available</p>";
       return;
     }
 
-    data.forEach(row=>{
+    // Skip header row (index 0)
+    for(let i = 1; i < data.length; i++) {
+      const row = data[i];
       const itemId = row[0];
       const itemName = row[1];
       const stock = row[4];
@@ -192,7 +194,7 @@ function loadItems(){
           <span>${itemName} (Stock: ${stock})</span>
         </label>
       `;
-    });
+    }
   })
   .catch(error => {
     console.error("Error loading items:", error);
@@ -345,8 +347,58 @@ function loadBorrowHistory(){
   });
 }
 
+function checkOverdueItems(){
+  fetch(API,{
+    method:"POST",
+    body:new URLSearchParams({
+      action:"getOverdueItems",
+      student:localStorage.getItem("userID")
+    })
+  })
+  .then(res=>{
+    if(!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+    return res.json();
+  })
+  .then(data=>{
+    if(data.hasOverdue && data.overdueCount > 0){
+      // Show notification in UI
+      const overdueList = data.items.map(item => `${item.itemName} (${item.daysOverdue} days overdue)`).join(", ");
+      showNotification(`⚠️ You have ${data.overdueCount} overdue item(s): ${overdueList}`, "error");
+      
+      // Send browser notification if permission is granted
+      if("Notification" in window && Notification.permission === "granted"){
+        new Notification("📌 Inventory Management", {
+          body: `You have ${data.overdueCount} overdue item(s) that need to be returned!`,
+          icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='75' font-size='75'>📦</text></svg>",
+          tag: "overdue-items",
+          requireInteraction: true
+        });
+      }
+    }
+  })
+  .catch(error => {
+    console.error("Error checking overdue items:", error);
+  });
+}
+
+function requestNotificationPermission(){
+  if("Notification" in window && Notification.permission === "default"){
+    Notification.requestPermission().then(permission => {
+      if(permission === "granted"){
+        showNotification("✓ Notifications enabled! You'll get alerts for overdue items.", "success");
+        checkOverdueItems();
+      }
+    });
+  }
+}
+
 checkAuth();
-loadItems();
+// Request notification permission
+requestNotificationPermission();
+// Check for overdue items on page load
+checkOverdueItems();
+// Check again every 5 minutes
+setInterval(checkOverdueItems, 5 * 60 * 1000);
 </script>
 
 </body>
