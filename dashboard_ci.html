@@ -387,7 +387,10 @@ function loadBorrowedItemsTracking(){
     method:"POST",
     body:new URLSearchParams({action:"getAllBorrows"})
   })
-  .then(res=>res.json())
+  .then(res=>{
+    if(!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+    return res.json();
+  })
   .then(data=>{
     let borrowedList = document.getElementById("borrowedList");
     let returnedList = document.getElementById("returnedList");
@@ -396,7 +399,7 @@ function loadBorrowedItemsTracking(){
     returnedList.innerHTML = "";
     warningContainer.innerHTML = "";
 
-    if (!data || data.length === 0) {
+    if (!data || data.length === 0 || data.error) {
       borrowedList.innerHTML = "<p style='text-align:center; color:#999;'>No borrowed items</p>";
       return;
     }
@@ -459,7 +462,8 @@ function loadBorrowedItemsTracking(){
     }
   })
   .catch(error => {
-    console.error("Error:", error);
+    console.error("Error loading borrow records:", error);
+    document.getElementById("borrowedList").innerHTML = "<p style='text-align:center; color:#dc3545;'>❌ Error loading records</p>";
     showNotification("Failed to load borrow records", "error");
   });
 }
