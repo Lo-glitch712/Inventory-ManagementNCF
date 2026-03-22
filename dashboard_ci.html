@@ -5,6 +5,90 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CI Dashboard - Inventory Management</title>
   <link rel="stylesheet" href="style.css">
+  <style>
+    .tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      border-bottom: 2px solid #e0e0e0;
+    }
+    .tab-btn {
+      padding: 12px 20px;
+      background: transparent;
+      border: none;
+      border-bottom: 3px solid transparent;
+      cursor: pointer;
+      font-weight: 600;
+      color: #666;
+      transition: all 0.3s ease;
+      position: relative;
+    }
+    .tab-btn.active {
+      color: #667eea;
+      border-bottom-color: #667eea;
+    }
+    .tab-btn .badge {
+      position: absolute;
+      top: -5px;
+      right: -5px;
+      background: #dc3545;
+      color: white;
+      border-radius: 50%;
+      padding: 2px 6px;
+      font-size: 11px;
+      font-weight: bold;
+    }
+    .tab-content {
+      display: none;
+    }
+    .tab-content.active {
+      display: block;
+    }
+    .borrow-record {
+      background: #f8f9fa;
+      padding: 15px;
+      margin: 10px 0;
+      border-radius: 8px;
+      border-left: 4px solid #ffc107;
+    }
+    .borrow-record.overdue {
+      border-left-color: #dc3545;
+    }
+    .borrow-header {
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 8px;
+    }
+    .borrow-info {
+      font-size: 14px;
+      color: #666;
+      line-height: 1.6;
+    }
+    .status-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-top: 8px;
+    }
+    .status-borrowed {
+      background: #fff3cd;
+      color: #856404;
+    }
+    .status-returned {
+      background: #d4edda;
+      color: #155724;
+    }
+    .warning {
+      background: #fff3cd;
+      padding: 15px;
+      border-radius: 8px;
+      color: #856404;
+      margin-bottom: 20px;
+      border-left: 4px solid #ffc107;
+    }
+  </style>
 </head>
 <body>
 
@@ -17,52 +101,76 @@
 </div>
 
 <div class="container">
-  <h3>➕ Add New Item</h3>
-  
-  <div class="form-group">
-    <label for="item">Item Name</label>
-    <input id="item" type="text" placeholder="e.g., Stethoscope" required>
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('inventory-tab')">📦 Inventory</button>
+    <button class="tab-btn" onclick="switchTab('borrowed-tab')">🔄 Borrowed Items <span class="badge" id="borrowedCount" style="display:none;"></span></button>
+    <button class="tab-btn" onclick="switchTab('scanner-tab')">📱 Scanner</button>
   </div>
-  
-  <div class="form-group">
-    <label for="size">Size/Variant</label>
-    <input id="size" type="text" placeholder="e.g., Large, Adult" required>
-  </div>
-  
-  <div class="form-group">
-    <label for="code">Item Code</label>
-    <input id="code" type="text" placeholder="e.g., STH-001" required>
-  </div>
-  
-  <div class="form-group">
-    <label for="stock">Stock Quantity</label>
-    <input id="stock" type="number" placeholder="Enter quantity" min="0" required>
-  </div>
-  
-  <div class="form-group">
-    <label for="type">Item Type</label>
-    <input id="type" type="text" placeholder="e.g., Medical Equipment" required>
-  </div>
-  
-  <div class="form-group">
-    <label for="location">Storage Location</label>
-    <input id="location" type="text" placeholder="e.g., Cabinet A1, Shelf B2" required>
-  </div>
-  
-  <button onclick="addItem()">Add Item</button>
-</div>
 
-<div class="container">
-  <h3>📋 Inventory List</h3>
-  <div style="overflow-x: auto;">
-    <table id="inventoryTable" border="1"></table>
-  </div>
-</div>
+  <!-- TAB 1: Inventory Management -->
+  <div id="inventory-tab" class="tab-content active">
+    <h3>➕ Add New Item</h3>
+    
+    <div class="form-group">
+      <label for="item">Item Name</label>
+      <input id="item" type="text" placeholder="e.g., Stethoscope" required>
+    </div>
+    
+    <div class="form-group">
+      <label for="size">Size/Variant</label>
+      <input id="size" type="text" placeholder="e.g., Large, Adult" required>
+    </div>
+    
+    <div class="form-group">
+      <label for="code">Item Code</label>
+      <input id="code" type="text" placeholder="e.g., STH-001" required>
+    </div>
+    
+    <div class="form-group">
+      <label for="stock">Stock Quantity</label>
+      <input id="stock" type="number" placeholder="Enter quantity" min="0" required>
+    </div>
+    
+    <div class="form-group">
+      <label for="type">Item Type</label>
+      <input id="type" type="text" placeholder="e.g., Medical Equipment" required>
+    </div>
+    
+    <div class="form-group">
+      <label for="location">Storage Location</label>
+      <input id="location" type="text" placeholder="e.g., Cabinet A1, Shelf B2" required>
+    </div>
+    
+    <button onclick="addItem()">Add Item</button>
 
-<div class="container">
-  <h3>📱 Scan QR Code</h3>
-  <p style="color: #666; margin-bottom: 15px;">Click below to open the scanner and process returns</p>
-  <a href="scanner.html" class="btn-primary" style="display: inline-block;">Open Scanner</a>
+    <h3 style="margin-top: 30px;">📋 Inventory List</h3>
+    <div style="overflow-x: auto;">
+      <table id="inventoryTable" border="1"></table>
+    </div>
+  </div>
+
+  <!-- TAB 2: Borrowed Items -->
+  <div id="borrowed-tab" class="tab-content">
+    <h3>🔄 Borrowed Items Tracking</h3>
+    
+    <div id="warningContainer"></div>
+
+    <h4 style="margin-top: 20px;">📤 Currently Borrowed</h4>
+    <div id="borrowedList"></div>
+
+    <h4 style="margin-top: 30px;">✅ Returned Items</h4>
+    <div id="returnedList"></div>
+  </div>
+
+  <!-- TAB 3: Scanner -->
+  <div id="scanner-tab" class="tab-content">
+    <h3>📱 Scan QR Code</h3>
+    <p style="color: #666; margin-bottom: 15px;">Scanning process:
+      <br> • <strong>First scan:</strong> Confirms borrow, reduces stock
+      <br> • <strong>Second scan (on return):</strong> Confirms return, restores stock
+    </p>
+    <a href="scanner.html" class="btn-primary" style="display: inline-block;">Open Scanner</a>
+  </div>
 </div>
 
 <script src="app.js"></script>
@@ -75,6 +183,18 @@ function checkAuth() {
     window.location = "login.html";
   } else {
     document.getElementById("userName").textContent = localStorage.getItem("userName") || "User";
+  }
+}
+
+function switchTab(tabName) {
+  document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+  
+  document.getElementById(tabName).classList.add('active');
+  event.target.classList.add('active');
+  
+  if(tabName === 'borrowed-tab') {
+    loadBorrowedItemsTracking();
   }
 }
 
@@ -180,7 +300,6 @@ function deleteItem(index){
 }
 
 function addItem(){
-  // Get all form fields
   const item = document.getElementById('item').value.trim();
   const size = document.getElementById('size').value.trim();
   const code = document.getElementById('code').value.trim();
@@ -188,7 +307,6 @@ function addItem(){
   const type = document.getElementById('type').value.trim();
   const location = document.getElementById('location').value.trim();
 
-  // Validation
   if (!item || item === '') {
     showNotification("Please enter item name", "error");
     return;
@@ -246,7 +364,6 @@ function addItem(){
     setLoading(button, false);
     if (data.status === "success") {
       showNotification("Item added successfully!", "success");
-      // Clear form
       document.getElementById('item').value = "";
       document.getElementById('size').value = "";
       document.getElementById('code').value = "";
@@ -265,11 +382,91 @@ function addItem(){
   });
 }
 
+function loadBorrowedItemsTracking(){
+  fetch(API,{
+    method:"POST",
+    body:new URLSearchParams({action:"getAllBorrows"})
+  })
+  .then(res=>res.json())
+  .then(data=>{
+    let borrowedList = document.getElementById("borrowedList");
+    let returnedList = document.getElementById("returnedList");
+    let warningContainer = document.getElementById("warningContainer");
+    borrowedList.innerHTML = "";
+    returnedList.innerHTML = "";
+    warningContainer.innerHTML = "";
+
+    if (!data || data.length === 0) {
+      borrowedList.innerHTML = "<p style='text-align:center; color:#999;'>No borrowed items</p>";
+      return;
+    }
+
+    let overduCount = 0;
+    let borrowedCount = 0;
+
+    data.forEach(record => {
+      const student = record[1];
+      const items = record[2];
+      const borrowDate = new Date(record[3]);
+      const returnDate = new Date(record[4]);
+      const status = record[5];
+      const now = new Date();
+      const isOverdue = returnDate < now && status === "Borrowed";
+
+      if(isOverdue) overduCount++;
+      if(status === "Borrowed") borrowedCount++;
+
+      if(status === "Borrowed") {
+        borrowedList.innerHTML += `
+          <div class="borrow-record ${isOverdue ? 'overdue' : ''}">
+            <div class="borrow-header">${items}${isOverdue ? ' ⚠️ OVERDUE' : ''}</div>
+            <div class="borrow-info">
+              <p><strong>Student ID:</strong> ${student}</p>
+              <p><strong>Borrowed:</strong> ${borrowDate.toLocaleString()}</p>
+              <p><strong>Return Date:</strong> ${returnDate.toLocaleString()}</p>
+              <span class="status-badge status-borrowed">Borrowed</span>
+            </div>
+          </div>
+        `;
+      } else if(status === "Returned") {
+        returnedList.innerHTML += `
+          <div class="borrow-record">
+            <div class="borrow-header">${items}</div>
+            <div class="borrow-info">
+              <p><strong>Student ID:</strong> ${student}</p>
+              <p><strong>Returned:</strong> ${borrowDate.toLocaleString()}</p>
+              <span class="status-badge status-returned">✓ Returned</span>
+            </div>
+          </div>
+        `;
+      }
+    });
+
+    if(borrowedCount > 0) {
+      document.getElementById('borrowedCount').textContent = borrowedCount;
+      document.getElementById('borrowedCount').style.display = 'inline-block';
+    }
+
+    if(overduCount > 0) {
+      warningContainer.innerHTML = `<div class="warning">⚠️ <strong>${overduCount} item(s) overdue!</strong> Please follow up with students.</div>`;
+    }
+
+    if(borrowedList.innerHTML === "") {
+      borrowedList.innerHTML = "<p style='text-align:center; color:#999;'>No items currently borrowed</p>";
+    }
+    if(returnedList.innerHTML === "") {
+      returnedList.innerHTML = "<p style='text-align:center; color:#999;'>No returned items yet</p>";
+    }
+  })
+  .catch(error => {
+    console.error("Error:", error);
+    showNotification("Failed to load borrow records", "error");
+  });
+}
+
 checkAuth();
 loadItems();
 </script>
 
 </body>
 </html>
-
-
