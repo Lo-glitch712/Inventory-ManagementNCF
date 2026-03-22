@@ -257,7 +257,10 @@ function closeMenu(){
 document.addEventListener("click", function(event) {
   const menu = document.getElementById("sideMenu");
   const menuToggle = document.querySelector(".menu-toggle");
-  if(!menu.contains(event.target) && event.target !== menuToggle) {
+  const isClickOnMenu = menu && menu.contains(event.target);
+  const isClickOnToggle = menuToggle && (event.target === menuToggle || menuToggle.contains(event.target));
+  
+  if(!isClickOnMenu && !isClickOnToggle && menu.classList.contains("active")) {
     menu.classList.remove("active");
   }
 });
@@ -622,7 +625,6 @@ function loadBorrowedItemsTracking(){
           <div class="borrow-record ${isOverdue ? 'overdue' : ''}">
             <div class="borrow-header">${items}${isOverdue ? ' ⚠️ OVERDUE' : ''}</div>
             <div class="borrow-info">
-              <p><strong>Student ID:</strong> ${student}</p>
               <p><strong>Student Name:</strong> ${studentName}</p>
               <p><strong>Borrowed:</strong> ${borrowDate.toLocaleString()}</p>
               <p><strong>Return Date:</strong> ${returnDate.toLocaleString()}</p>
@@ -635,7 +637,6 @@ function loadBorrowedItemsTracking(){
           <div class="borrow-record">
             <div class="borrow-header">${items}</div>
             <div class="borrow-info">
-              <p><strong>Student ID:</strong> ${student}</p>
               <p><strong>Student Name:</strong> ${studentName}</p>
               <p><strong>Returned:</strong> ${borrowDate.toLocaleString()}</p>
               <span class="status-badge status-returned">✓ Returned</span>
