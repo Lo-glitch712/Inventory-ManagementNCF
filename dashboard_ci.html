@@ -180,14 +180,47 @@ function deleteItem(index){
 }
 
 function addItem(){
+  // Get all form fields
+  const item = document.getElementById('item').value.trim();
+  const size = document.getElementById('size').value.trim();
+  const code = document.getElementById('code').value.trim();
+  const stock = document.getElementById('stock').value.trim();
+  const type = document.getElementById('type').value.trim();
+  const location = document.getElementById('location').value.trim();
+
   // Validation
-  if (!item.value || !size.value || !code.value || !stock.value || !type.value || !location.value) {
-    showNotification("Please fill all fields", "error");
+  if (!item || item === '') {
+    showNotification("Please enter item name", "error");
     return;
   }
 
-  if (isNaN(stock.value) || stock.value < 0) {
-    showNotification("Stock must be a valid number", "error");
+  if (!size || size === '') {
+    showNotification("Please enter size/variant", "error");
+    return;
+  }
+
+  if (!code || code === '') {
+    showNotification("Please enter item code", "error");
+    return;
+  }
+
+  if (!stock || stock === '') {
+    showNotification("Please enter stock quantity", "error");
+    return;
+  }
+
+  if (isNaN(stock) || parseInt(stock) < 0) {
+    showNotification("Stock must be a valid positive number", "error");
+    return;
+  }
+
+  if (!type || type === '') {
+    showNotification("Please enter item type", "error");
+    return;
+  }
+
+  if (!location || location === '') {
+    showNotification("Please enter storage location", "error");
     return;
   }
 
@@ -199,12 +232,12 @@ function addItem(){
     method:"POST",
     body:new URLSearchParams({
       action:"addItem",
-      item:item.value,
-      size:size.value,
-      code:code.value,
-      stock:stock.value,
-      type:type.value,
-      location:location.value,
+      item:item,
+      size:size,
+      code:code,
+      stock:stock,
+      type:type,
+      location:location,
       owner:localStorage.getItem("userID")
     })
   })
@@ -214,12 +247,12 @@ function addItem(){
     if (data.status === "success") {
       showNotification("Item added successfully!", "success");
       // Clear form
-      item.value = "";
-      size.value = "";
-      code.value = "";
-      stock.value = "";
-      type.value = "";
-      location.value = "";
+      document.getElementById('item').value = "";
+      document.getElementById('size').value = "";
+      document.getElementById('code').value = "";
+      document.getElementById('stock').value = "";
+      document.getElementById('type').value = "";
+      document.getElementById('location').value = "";
       loadItems();
     } else {
       showNotification(data.message || "Failed to add item", "error");
