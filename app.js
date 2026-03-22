@@ -1,4 +1,4 @@
-const API = "PASTE_YOUR_WEB_APP_URL";
+const API = "https://script.google.com/macros/s/AKfycbxwUSZX6XCJytfqECWqsXxBxVDzA-iJ7HtaXtKby8Ma9YfPdtrZ3q3UiOLlTY00oukf/exec";
 
 // Helper function for showing notifications
 function showNotification(message, type = 'info') {
@@ -118,6 +118,8 @@ function login(){
     showNotification('Error: ' + error.message, 'error');
   });
 }
+
+localStorage.setItem("userID", data.id);
 
 function logout() {
   localStorage.clear();
