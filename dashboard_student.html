@@ -196,6 +196,24 @@
     <div id="borrowedItemsList"></div>
   </div>
 
+  <!-- Return Item Modal -->
+  <div id="returnModal" class="modal">
+    <div class="modal-content" style="max-width: 500px;">
+      <div class="modal-header">
+        <h3>📥 Return Item</h3>
+        <button class="close-btn" onclick="closeReturnModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <p><strong id="returnItemName"></strong></p>
+        <p style="color: #666; margin-bottom: 20px;">Scan this QR code at the counter to process the return</p>
+        <div style="text-align: center;">
+          <canvas id="returnQRcode"></canvas>
+        </div>
+        <p style="color: #999; font-size: 12px; margin-top: 15px; text-align: center;">This QR code contains your return information</p>
+      </div>
+    </div>
+  </div>
+
   <!-- TAB 3: History -->
   <div id="history-tab" class="tab-content">
     <h3>📋 Borrow History</h3>
@@ -340,6 +358,32 @@ function updatePassword(){
   });
 }
 
+// Return Item Modal Functions
+function closeReturnModal(){
+  document.getElementById("returnModal").style.display = "none";
+}
+
+function showReturnQR(itemName, qrData){
+  // Show modal
+  document.getElementById("returnModal").style.display = "block";
+  
+  // Set item name
+  document.getElementById("returnItemName").textContent = itemName;
+  
+  // Generate QR code with return data
+  const canvas = document.getElementById("returnQRcode");
+  canvas.innerHTML = ""; // QRCode.js creates img, so clear first
+  
+  new QRCode(canvas, {
+    text: qrData,
+    width: 250,
+    height: 250,
+    colorDark: "#000000",
+    colorLight: "#ffffff",
+    correctLevel: QRCode.CorrectLevel.H
+  });
+}
+
 // Check authentication
 function checkAuth() {
   if (!localStorage.getItem("userID")) {
@@ -347,6 +391,17 @@ function checkAuth() {
   } else {
     document.getElementById("userName").textContent = localStorage.getItem("userName") || "User";
   }
+  
+  // Add modal close handlers
+  document.getElementById("profileModal").onclick = function(e) {
+    if(e.target === this) this.style.display = "none";
+  };
+  document.getElementById("passwordModal").onclick = function(e) {
+    if(e.target === this) this.style.display = "none";
+  };
+  document.getElementById("returnModal").onclick = function(e) {
+    if(e.target === this) this.style.display = "none";
+  };
 }
 
 function switchTab(tabName) {
@@ -467,7 +522,7 @@ function loadBorrowedItems(){
     }
 
     let foundBorrowed = false;
-    data.forEach(record => {
+    data.forEach((record, idx) => {
       // Handle both old format (6 cols) and new format (7 cols)
       const status = record.length >= 7 ? record[6] : record[5];
       const items = record.length >= 7 ? record[3] : record[2];
@@ -479,6 +534,15 @@ function loadBorrowedItems(){
         const now = new Date();
         const isOverdue = returnDate < now;
 
+        // Generate QR data for this borrow record
+        const qrData = JSON.stringify({
+          student: record.length >= 7 ? record[1] : record[1],
+          studentName: record.length >= 7 ? record[2] : localStorage.getItem("userName"),
+          items: items,
+          returnDate: returnDateVal,
+          action: "return"
+        });
+
         container.innerHTML += `
           <div class="borrowed-item">
             <div class="borrowed-item-header">${items}</div>
@@ -487,6 +551,7 @@ function loadBorrowedItems(){
               <p><strong>Status:</strong> <span class="status-badge status-borrowed">Borrowed</span></p>
               ${isOverdue ? '<p style="color: #dc3545;"><strong>⚠️ OVERDUE</strong></p>' : ''}
             </div>
+            <button onclick='showReturnQR("${items}", "${qrData.replace(/"/g, '&quot;')}");' style="background: #10b981; color: white; padding: 10px 16px; border: none; border-radius: 5px; cursor: pointer; margin-top: 10px; width: 100%; font-weight: 600; transition: all 0.3s ease;" onmouseover="this.style.background='#059669'" onmouseout="this.style.background='#10b981'">📥 Return Item</button>
           </div>
         `;
       }
@@ -571,19 +636,25 @@ function checkOverdueItems(){
     return res.json();
   })
   .then(data=>{
-    if(data.hasOverdue && data.overdueCount > 0){
-      // Show notification in UI
+    if(data && data.hasOverdue && data.overdueCount > 0){
+      // Show notification in UI - this is the main notification users should see
       const overdueList = data.items.map(item => `${item.itemName} (${item.daysOverdue} days overdue)`).join(", ");
-      showNotification(`⚠️ You have ${data.overdueCount} overdue item(s): ${overdueList}`, "error");
+      const message = `⚠️ You have ${data.overdueCount} overdue item(s): ${overdueList}`;
+      console.log("Showing overdue notification:", message);
+      showNotification(message, "error");
       
       // Send browser notification if permission is granted
       if("Notification" in window && Notification.permission === "granted"){
-        new Notification("📌 Inventory Management", {
-          body: `You have ${data.overdueCount} overdue item(s) that need to be returned!`,
-          icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='75' font-size='75'>📦</text></svg>",
-          tag: "overdue-items",
-          requireInteraction: true
-        });
+        try {
+          new Notification("📌 Inventory Management", {
+            body: `You have ${data.overdueCount} overdue item(s) that need to be returned!`,
+            icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='75' font-size='75'>📦</text></svg>",
+            tag: "overdue-items",
+            requireInteraction: true
+          });
+        } catch(e) {
+          console.error("Failed to send browser notification:", e);
+        }
       }
     }
   })
