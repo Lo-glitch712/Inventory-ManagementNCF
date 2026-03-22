@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Register - Inventory Management System</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="container">
+  <h2>📝 Register</h2>
+  
+  <div class="form-group">
+    <label for="role">Role</label>
+    <select id="role" required>
+      <option value="">-- Select Role --</option>
+      <option value="Student">Student</option>
+      <option value="Clinical Instructor">Clinical Instructor</option>
+    </select>
+  </div>
+
+  <div class="form-group">
+    <label for="name">Full Name</label>
+    <input id="name" type="text" placeholder="Enter your full name" required>
+  </div>
+
+  <div class="form-group">
+    <label for="department">Department</label>
+    <input id="department" type="text" placeholder="e.g., Nursing, Medicine" required>
+  </div>
+
+  <div class="form-group">
+    <label for="year">Year Level</label>
+    <input id="year" type="number" placeholder="e.g., 1, 2, 3, 4" min="1" max="6" required>
+  </div>
+
+  <div class="form-group">
+    <label for="contact">Contact Number</label>
+    <input id="contact" type="tel" placeholder="Enter your contact number" required>
+  </div>
+
+  <div class="form-group">
+    <label for="email">Email Address</label>
+    <input id="email" type="email" placeholder="Enter your email" required>
+  </div>
+
+  <div class="form-group">
+    <label for="password">Password</label>
+    <input id="password" type="password" placeholder="Minimum 6 characters" minlength="6" required>
+  </div>
+
+  <button onclick="register()">Register</button>
+  
+  <div class="auth-buttons" style="justify-content: center; gap: 10px;">
+    <span style="color: #666;">Already have an account?</span>
+    <a href="login.html" style="padding: 8px 16px; margin-top: 0;">Login here</a>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

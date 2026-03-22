@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QR Scanner - Inventory Management</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .scanner-container {
+      max-width: 600px;
+      margin: 20px auto;
+    }
+  </style>
+</head>
+<body>
+
+<div class="navbar">
+  <h1>📱 QR Code Scanner</h1>
+  <div class="navbar-right">
+    <a href="dashboard_ci.html" style="color: white; text-decoration: none; padding: 8px 16px; background: #667eea; border-radius: 5px;">Back</a>
+  </div>
+</div>
+
+<div class="scanner-container">
+  <div class="container">
+    <h3>Scan Item Return QR Code</h3>
+    <p style="color: #666; margin-bottom: 20px;">Position the QR code in the camera to automatically process the return</p>
+    <div id="reader" style="width: 100%; max-width: 500px; margin: 0 auto;"></div>
+    <div id="result" style="margin-top: 20px; text-align: center;"></div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/html5-qrcode"></script>
+<script src="app.js"></script>
+<script>
+let scanner = null;
+let isProcessing = false;
+
+function onScanSuccess(decodedText) {
+  if (isProcessing) return; // Prevent multiple submissions
+  
+  isProcessing = true;
+  
+  try {
+    let data = JSON.parse(decodedText);
+    
+    document.getElementById("result").innerHTML = `
+      <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; text-align: left;">
+        <h4>Return Details</h4>
+        <p><strong>Student ID:</strong> ${data.student}</p>
+        <p><strong>Student Name:</strong> ${data.studentName || 'N/A'}</p>
+        <p><strong>Items:</strong> ${data.itemNames || data.items}</p>
+        <p><strong>Borrow Date:</strong> ${new Date(data.borrowDate).toLocaleString()}</p>
+        <p><strong>Return Date:</strong> ${new Date(data.returnDate).toLocaleString()}</p>
+      </div>
+    `;
+
+    fetch(API, {
+      method:"POST",
+      body:new URLSearchParams({
+        action:"returnItem",
+        student:data.student,
+        items:data.items
+      })
+    })
+    .then(res=>res.json())
+    .then(response=>{
+      if (response.status === "success") {
+        showNotification("Item returned successfully!", "success");
+        document.getElementById("result").innerHTML += `<div style="margin-top: 15px; padding: 15px; background: #d4edda; border-radius: 8px; color: #155724;"><strong>✓ Return processed successfully</strong></div>`;
+        
+        // Reset after 3 seconds
+        setTimeout(() => {
+          isProcessing = false;
+          document.getElementById("result").innerHTML = "";
+          if (scanner) {
+            scanner.resume();
+          }
+        }, 3000);
+      } else {
+        showNotification(response.message || "Return failed", "error");
+        isProcessing = false;
+        if (scanner) {
+          scanner.resume();
+        }
+      }
+    })
+    .catch(error => {
+      console.error("Error:", error);
+      showNotification("Error processing return: " + error.message, "error");
+      isProcessing = false;
+      if (scanner) {
+        scanner.resume();
+      }
+    });
+
+  } catch (e) {
+    console.error("Invalid QR code format:", e);
+    showNotification("Invalid QR code format", "error");
+    isProcessing = false;
+    if (scanner) {
+      scanner.resume();
+    }
+  }
+}
+
+function onScanError(error) {
+  // Handle permission denied
+  if (error.name === "NotAllowedError") {
+    showNotification("Camera permission denied. Please allow camera access.", "error");
+  }
+}
+
+// Initialize scanner
+try {
+  scanner = new Html5QrcodeScanner("reader", 
+    { 
+      fps: 10, 
+      qrbox: { width: 250, height: 250 },
+      disableFlip: false 
+    },
+    false
+  );
+  
+  scanner.render(onScanSuccess, onScanError);
+} catch (error) {
+  console.error("Scanner initialization error:", error);
+  document.getElementById("reader").innerHTML = `
+    <div style="background: #f8d7da; padding: 15px; border-radius: 8px; color: #721c24;">
+      <strong>Error:</strong> Unable to initialize camera. Please ensure:<br>
+      - Browser has camera permission<br>
+      - HTTPS is used or localhost is accessed<br>
+      - No other app is using the camera
+    </div>
+  `;
+}
+
+// Check authentication
+if (!localStorage.getItem("userID")) {
+  window.location = "login.html";
+}
+</script>
+
+</body>
+</html>
