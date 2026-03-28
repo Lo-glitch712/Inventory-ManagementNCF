@@ -1,4 +1,4 @@
-const API = "https://script.google.com/macros/s/AKfycbwQlwq9FCYTqxK9kMQghDPW7Qr5gPBnBuILiAGk0bUHtjghSq7QCkNbNQAY_79KWaPn/exec";
+const API = "https://script.google.com/macros/s/AKfycbxwmA-7NK1YzwxItJ7lMxiFwYDMqBDOuQHiVbkhkqUi20dWN1LGTGdPBbPWzB7m96h5/exec";
 
 
 // Helper function for showing notifications
