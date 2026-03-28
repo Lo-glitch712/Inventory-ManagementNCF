@@ -211,6 +211,16 @@
       <label for="location">Storage Location</label>
       <input id="location" type="text" placeholder="e.g., Cabinet A1, Shelf B2" required>
     </div>
+
+    <div class="form-group">
+      <label for="unit">Unit</label>
+      <input id="unit" type="text" placeholder="e.g., pcs, box, set" required>
+    </div>
+
+    <div class="form-group">
+      <label for="procedures">Procedures / Usage Notes</label>
+      <textarea id="procedures" placeholder="e.g., For IV insertion, wound care, etc." rows="3"></textarea>
+    </div>
     
     <button onclick="addItem()">Add Item</button>
 
@@ -528,6 +538,8 @@ function addItem(){
   const stock = document.getElementById('stock').value.trim();
   const type = document.getElementById('type').value.trim();
   const location = document.getElementById('location').value.trim();
+  const unit = document.getElementById('unit').value.trim();
+  const procedures = document.getElementById('procedures').value.trim();
 
   if (!item || item === '') {
     showNotification("Please enter item name", "error");
@@ -564,6 +576,11 @@ function addItem(){
     return;
   }
 
+  if (!unit || unit === '') {
+    showNotification("Please enter unit (e.g., pcs, box)", "error");
+    return;
+  }
+
   const button = event.target;
   button.setAttribute('data-original-text', button.textContent);
   setLoading(button, true);
@@ -578,6 +595,8 @@ function addItem(){
       stock:stock,
       type:type,
       location:location,
+      unit:unit,
+      procedures:procedures,
       owner:localStorage.getItem("userID")
     })
   })
@@ -592,6 +611,8 @@ function addItem(){
       document.getElementById('stock').value = "";
       document.getElementById('type').value = "";
       document.getElementById('location').value = "";
+      document.getElementById('unit').value = "";
+      document.getElementById('procedures').value = "";
       loadItems();
     } else {
       showNotification(data.message || "Failed to add item", "error");
@@ -605,6 +626,38 @@ function addItem(){
 }
 
 function loadBorrowedItemsTracking(){
+  // First load inventory so we can resolve item IDs → names
+  fetch(API,{
+    method:"POST",
+    body:new URLSearchParams({action:"getItems"})
+  })
+  .then(res=>res.json())
+  .then(invData=>{
+    // Build id→name+unit map from inventory
+    const invMap = {};
+    if(Array.isArray(invData)){
+      for(let i=1;i<invData.length;i++){
+        const r=invData[i];
+        invMap[String(r[0])] = { name: r[1]||"", size: r[2]||"", unit: r[7]||"pcs" };
+      }
+    }
+
+    function resolveItems(rawItems){
+      // rawItems format: "id:qty,id:qty" or just item name text
+      if(!rawItems) return rawItems;
+      return rawItems.split(",").map(entry=>{
+        const parts = entry.trim().split(":");
+        const id = parts[0].trim();
+        const qty = parts[1] ? parseInt(parts[1]) : 1;
+        const inv = invMap[id];
+        if(inv){
+          const label = inv.size ? `${inv.name} (${inv.size})` : inv.name;
+          return `${label} × ${qty} ${inv.unit}`;
+        }
+        return entry.trim(); // fallback: show raw if not found
+      }).join(", ");
+    }
+
   fetch(API,{
     method:"POST",
     body:new URLSearchParams({action:"getAllBorrows"})
@@ -632,12 +685,17 @@ function loadBorrowedItemsTracking(){
     data.forEach(record => {
       const student = record[1];
       const studentName = record[2];
-      const items = record[3];
+      const rawItems = record[3];
       const borrowDate = new Date(record[4]);
       const returnDate = new Date(record[5]);
       const status = record[6];
+      const idNumber = record[10] || "";
+      const course = record[11] || "";
+      const subject = record[12] || "";
+      const procedure = record[13] || "";
       const now = new Date();
       const isOverdue = returnDate < now && status === "Borrowed";
+      const displayItems = resolveItems(rawItems);
 
       if(isOverdue) overduCount++;
       if(status === "Borrowed") borrowedCount++;
@@ -645,9 +703,13 @@ function loadBorrowedItemsTracking(){
       if(status === "Borrowed") {
         borrowedList.innerHTML += `
           <div class="borrow-record ${isOverdue ? 'overdue' : ''}">
-            <div class="borrow-header">${items}${isOverdue ? ' ⚠️ OVERDUE' : ''}</div>
+            <div class="borrow-header">${displayItems}${isOverdue ? ' ⚠️ OVERDUE' : ''}</div>
             <div class="borrow-info">
               <p><strong>Student Name:</strong> ${studentName}</p>
+              ${idNumber ? `<p><strong>ID Number:</strong> ${idNumber}</p>` : ''}
+              ${course ? `<p><strong>Course:</strong> ${course}</p>` : ''}
+              ${subject ? `<p><strong>Subject:</strong> ${subject}</p>` : ''}
+              ${procedure ? `<p><strong>Procedure:</strong> ${procedure}</p>` : ''}
               <p><strong>Borrowed:</strong> ${borrowDate.toLocaleString()}</p>
               <p><strong>Return Date:</strong> ${returnDate.toLocaleString()}</p>
               <span class="status-badge status-borrowed">Borrowed</span>
@@ -657,9 +719,10 @@ function loadBorrowedItemsTracking(){
       } else if(status === "Returned") {
         returnedList.innerHTML += `
           <div class="borrow-record">
-            <div class="borrow-header">${items}</div>
+            <div class="borrow-header">${displayItems}</div>
             <div class="borrow-info">
               <p><strong>Student Name:</strong> ${studentName}</p>
+              ${idNumber ? `<p><strong>ID Number:</strong> ${idNumber}</p>` : ''}
               <p><strong>Returned:</strong> ${borrowDate.toLocaleString()}</p>
               <span class="status-badge status-returned">✓ Returned</span>
             </div>
@@ -689,6 +752,7 @@ function loadBorrowedItemsTracking(){
     document.getElementById("borrowedList").innerHTML = "<p style='text-align:center; color:#dc3545;'>❌ Error loading records</p>";
     showNotification("Failed to load borrow records", "error");
   });
+  }); // end inventory fetch
 }
 
 checkAuth();

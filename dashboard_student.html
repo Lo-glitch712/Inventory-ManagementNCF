@@ -190,6 +190,16 @@
     <div id="itemsList" class="items-list"></div>
 
     <div class="form-group">
+      <label for="procedure">🩺 Procedure / Purpose</label>
+      <input id="procedure" type="text" placeholder="e.g., IV Insertion, Wound Care, Blood Extraction..." required>
+    </div>
+
+    <div class="form-group">
+      <label for="subject">📚 Subject / Subject Code</label>
+      <input id="subject" type="text" placeholder="e.g., NCM 101, RLE...">
+    </div>
+
+    <div class="form-group">
       <label for="returnDate">Expected Return Date & Time</label>
       <input type="datetime-local" id="returnDate" required>
     </div>
@@ -490,37 +500,92 @@ function loadItems(){
     let container = document.getElementById("itemsList");
     container.innerHTML="";
 
-    if (!data || data.length <= 1) {
-      container.innerHTML = "<p style='text-align:center; color:#999;'>No items available</p>";
+    // data can be: 2D array (with header row) OR object with error
+    if (!data || data.error) {
+      container.innerHTML = "<p style='text-align:center; color:#dc3545;'>❌ Error loading items. Please refresh.</p>";
       return;
     }
 
-    // Skip header row (index 0)
-    for(let i = 1; i < data.length; i++) {
-      const row = data[i];
-      const itemId = row[0];
-      const itemName = row[1];
-      const stock = row[4];
-      
+    // If it's a 2D array, first row is headers
+    let rows = [];
+    if(Array.isArray(data)){
+      // Check if first element is also an array (2D) or a plain row
+      if(data.length > 0 && Array.isArray(data[0])){
+        // 2D array — skip header row [0]
+        rows = data.slice(1);
+      } else {
+        rows = data;
+      }
+    }
+
+    if(rows.length === 0){
+      container.innerHTML = "<p style='text-align:center; color:#999;'>No items available in inventory.</p>";
+      return;
+    }
+
+    container.innerHTML = "";
+    rows.forEach(row => {
+      const itemId   = row[0];
+      const itemName = row[1] || "";
+      const size     = row[2] || "";
+      const code     = row[3] || "";
+      const stock    = parseInt(row[4]) || 0;
+      const type     = row[5] || "";
+      const location = row[6] || "";
+      const unit     = row[7] || "pcs";
+      const procedures = row[8] || "";
+
+      if(stock <= 0) return; // hide out-of-stock items
+
+      const displayName = size ? `${itemName} (${size})` : itemName;
+      const procHint = procedures ? `<small style="color:#888;display:block;margin-top:2px;">📋 ${procedures}</small>` : '';
+
       container.innerHTML += `
-        <label class="item-label">
-          <input type="checkbox" class="item-checkbox" value="${itemId}" data-name="${itemName}" onchange="selectItem(this)">
-          <span>${itemName} (Stock: ${stock})</span>
+        <label class="item-label" style="flex-direction:column; align-items:flex-start; gap:6px;">
+          <div style="display:flex;align-items:center;gap:10px;width:100%;">
+            <input type="checkbox" class="item-checkbox" value="${itemId}"
+              data-name="${displayName}" data-unit="${unit}" data-stock="${stock}"
+              onchange="selectItem(this)">
+            <span style="flex:1;"><strong>${displayName}</strong> <span style="color:#10b981;">(${stock} ${unit} available)</span></span>
+            <div style="display:flex;align-items:center;gap:4px;">
+              <label style="font-size:12px;color:#666;margin:0;">Qty:</label>
+              <input type="number" id="qty_${itemId}" value="1" min="1" max="${stock}"
+                style="width:60px;padding:4px 6px;margin:0;font-size:14px;"
+                onclick="event.stopPropagation()"
+                onchange="updateQty('${itemId}')">
+            </div>
+          </div>
+          ${procHint}
+          <small style="color:#aaa;">${code ? 'Code: '+code : ''} ${location ? '| '+location : ''}</small>
         </label>
       `;
+    });
+
+    if(container.innerHTML === ""){
+      container.innerHTML = "<p style='text-align:center; color:#999;'>No items available in inventory.</p>";
     }
   })
   .catch(error => {
     console.error("Error loading items:", error);
+    document.getElementById("itemsList").innerHTML = "<p style='text-align:center; color:#dc3545;'>❌ Failed to load items. Please refresh.</p>";
     showNotification("Failed to load items", "error");
   });
 }
 
 function selectItem(el){
+  const qty = parseInt(document.getElementById(`qty_${el.value}`)?.value) || 1;
   if(el.checked){
-    selectedItems.push({id: el.value, name: el.dataset.name});
+    selectedItems.push({id: el.value, name: el.dataset.name, qty: qty, unit: el.dataset.unit || "pcs"});
   }else{
     selectedItems = selectedItems.filter(i=>i.id!==el.value);
+  }
+}
+
+function updateQty(itemId){
+  const idx = selectedItems.findIndex(i=>i.id===String(itemId));
+  if(idx >= 0){
+    const newQty = parseInt(document.getElementById(`qty_${itemId}`)?.value) || 1;
+    selectedItems[idx].qty = newQty;
   }
 }
 
@@ -539,9 +604,8 @@ function filterItems(){
     }
   });
   
-  // Show message if no items match
   if(visibleCount === 0 && searchText.length > 0){
-    // You could add a "no results" message here if needed
+    // no results
   }
 }
 
@@ -555,15 +619,39 @@ function generateQR(){
     showNotification("Please select a return date and time", "error");
     return;
   }
-  
-  const data = JSON.stringify({
-    student: localStorage.getItem("userID"),
-    studentName: localStorage.getItem("userName"),
-    items: selectedItems.map(i => i.id).join(","),
-    itemNames: selectedItems.map(i => i.name).join(", "),
-    returnDate: document.getElementById("returnDate").value,
-    borrowDate: new Date().toISOString()
+
+  const procedure = document.getElementById("procedure").value.trim();
+  if (!procedure) {
+    showNotification("Please enter the procedure / purpose", "error");
+    return;
+  }
+
+  // Sync qtys from inputs before generating
+  selectedItems = selectedItems.map(it => {
+    const qtyInput = document.getElementById(`qty_${it.id}`);
+    const qty = qtyInput ? parseInt(qtyInput.value) || 1 : it.qty || 1;
+    return {...it, qty};
   });
+
+  // items format: "id:qty,id:qty" — required by backend
+  const itemsString  = selectedItems.map(i => `${i.id}:${i.qty}`).join(",");
+  const itemNamesStr = selectedItems.map(i => `${i.name} ×${i.qty}`).join(", ");
+  const subject      = document.getElementById("subject").value.trim();
+  const userID       = localStorage.getItem("userID");
+  const userName     = localStorage.getItem("userName");
+
+  const qrPayload = {
+    student:     userID,
+    studentName: userName,
+    items:       itemsString,
+    itemNames:   itemNamesStr,
+    returnDate:  document.getElementById("returnDate").value,
+    borrowDate:  new Date().toISOString(),
+    procedure:   procedure,
+    subject:     subject
+  };
+
+  const data = JSON.stringify(qrPayload);
 
   QRCode.toCanvas(document.getElementById("qrcode"), data, {
     width: 300,
@@ -575,8 +663,7 @@ function generateQR(){
   });
 
   document.getElementById("qrContainer").style.display = "block";
-  
-  showNotification("✓ QR Code generated! Take it to the counter to scan and process your borrow.", "success");
+  showNotification("✓ QR Code generated! Show this to the instructor to scan.", "success");
 }
 
 function loadBorrowedItems(){

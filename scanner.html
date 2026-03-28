@@ -106,18 +106,27 @@ function processBorrow(data) {
       <h4>📤 Borrow Confirmation</h4>
       <p><strong>Student Name:</strong> ${data.studentName}</p>
       <p><strong>Items:</strong> ${data.itemNames || data.items}</p>
+      ${data.procedure ? `<p><strong>Procedure:</strong> ${data.procedure}</p>` : ''}
+      ${data.subject ? `<p><strong>Subject:</strong> ${data.subject}</p>` : ''}
       <p><strong>Return Date:</strong> ${new Date(data.returnDate).toLocaleString()}</p>
     </div>
   `;
+
+  const ciUserID   = localStorage.getItem("userID");
+  const ciUserName = localStorage.getItem("userName");
 
   fetch(API, {
     method:"POST",
     body:new URLSearchParams({
       action:"borrow",
-      student:data.student,
+      student:    data.student,
       studentName:data.studentName,
-      items:data.items,
-      returnDate:data.returnDate
+      items:      data.items,          // already "id:qty,id:qty" format from QR
+      returnDate: data.returnDate,
+      lentBy:     ciUserID   || "",
+      lentByName: ciUserName || "",
+      procedure:  data.procedure || "",
+      subject:    data.subject   || ""
     })
   })
   .then(res=>res.json())
